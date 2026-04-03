@@ -1,0 +1,15 @@
+@import "sanitize.css";
+@import "sanitize.css/forms.css";
+@import "sanitize.css/typography.css";
+
+.container {
+    width: 100%;
+    max-width: minmax(90vw, 1080px);
+    padding: 1rem;
+}
+
+.centered {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
