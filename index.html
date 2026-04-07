@@ -9,6 +9,34 @@
     <body>
         <main class="container centered">
             <h1>Welcome to Lexis Editor</h1>
+
+            <div style="display: grid; gap: 1em">
+                <lexis-toolbar id="edx-toolbar">
+                    <button
+                        type="button"
+                        data-command="bold"
+                        class="lexis-button"
+                    >
+                        Bold
+                    </button>
+                    <button
+                        type="button"
+                        data-command="italic"
+                        class="lexis-button"
+                    >
+                        Italic
+                    </button>
+                    <button
+                        type="button"
+                        data-command="underline"
+                        class="lexis-button"
+                    >
+                        Underline
+                    </button>
+                </lexis-toolbar>
+
+                <lexis-editor toolbar="edx-toolbar"></lexis-editor>
+            </div>
         </main>
         <script type="module" src="/src/main.js"></script>
     </body>

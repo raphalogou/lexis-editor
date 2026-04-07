@@ -4,12 +4,63 @@
 
 .container {
     width: 100%;
-    max-width: minmax(90vw, 1080px);
+    max-width: min(90vw, 1080px);
     padding: 1rem;
+    margin-inline: auto;
 }
 
 .centered {
-    display: flex;
+    display: grid;
     width: 100%;
-    justify-content: center;
+}
+
+lexis-editor,
+[data-part="editor-container"] {
+    display: grid;
+    gap: 1rem;
+}
+
+lexis-toolbar,
+[data-part="editor-toolbar"] {
+    display: flex;
+    gap: 0.5rem;
+}
+
+[data-part="editor-root"] {
+    min-height: 16ch;
+    width: 100%;
+    border: 1px slategray solid;
+    border-radius: 6px;
+    cursor: auto;
+}
+
+.lexis-content {
+    font-size: 16px;
+    padding: 0.65em 1em;
+
+    p {
+        margin: 0 0 0.35rem;
+    }
+
+    .font-bold {
+        font-weight: 600;
+    }
+
+    .underline {
+        text-decoration: underline;
+    }
+
+    .italic {
+        font-style: italic;
+    }
+}
+
+.lexis-button {
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+
+    &:hover,
+    &[data-state="active"] {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
 }
