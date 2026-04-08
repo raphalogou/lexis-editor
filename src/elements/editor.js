@@ -4,55 +4,55 @@ import { createElement } from "../helper";
 import { LexisToolbar } from "./toolbar";
 
 export class LexisEditor extends HTMLElement {
-	#editorInstance;
+  #editorInstance;
 
-	constructor() {
-		super();
+  constructor() {
+    super();
 
-		this.$rootEl = createElement(
-			"div",
-			{ class: "lexis-content", "data-part": "editor-root" },
-			{ contentEditable: true },
-		);
+    this.$rootEl = createElement(
+      "div",
+      { class: "lexis-content", "data-part": "editor-root" },
+      { contentEditable: true },
+    );
 
-		this.append(this.$rootEl);
+    this.append(this.$rootEl);
 
-		this.#editorInstance = new Editor(this.$rootEl);
+    this.#editorInstance = new Editor(this.$rootEl);
 
-		for (const cmd of commands) {
-			this.#editorInstance.registerCommand(cmd);
-		}
-	}
+    for (const cmd of commands) {
+      this.#editorInstance.registerCommand(cmd);
+    }
+  }
 
-	get editor() {
-		return this.#editorInstance;
-	}
+  get editor() {
+    return this.#editorInstance;
+  }
 
-	connectedCallback() {
-		const toolbar = this.#getToolbar() ?? this.#buildToolbar();
+  connectedCallback() {
+    const toolbar = this.#getToolbar() ?? this.#buildToolbar();
 
-		toolbar.attachEditor(this.#editorInstance);
-	}
+    toolbar.attachEditor(this.#editorInstance);
+  }
 
-	/**
-	 * @returns {import('./toolbar').LexisToolbar}
-	 */
-	#getToolbar() {
-		let toolbar = this.querySelector("lexis-toolbar");
+  /**
+   * @returns {import('./toolbar').LexisToolbar}
+   */
+  #getToolbar() {
+    let toolbar = this.querySelector("lexis-toolbar");
 
-		if (!toolbar && !!this.getAttribute("toolbar")) {
-			const toolbarAttr = this.getAttribute("toolbar");
-			toolbar = document.getElementById(toolbarAttr);
-		}
+    if (!toolbar && !!this.getAttribute("toolbar")) {
+      const toolbarAttr = this.getAttribute("toolbar");
+      toolbar = document.getElementById(toolbarAttr);
+    }
 
-		return toolbar instanceof LexisToolbar ? toolbar : null;
-	}
+    return toolbar instanceof LexisToolbar ? toolbar : null;
+  }
 
-	#buildToolbar() {
-		const toolbar = document.createElement("lexis-toolbar");
+  #buildToolbar() {
+    const toolbar = document.createElement("lexis-toolbar");
 
-		return toolbar;
-	}
+    return toolbar;
+  }
 }
 
 customElements.define("lexis-editor", LexisEditor);

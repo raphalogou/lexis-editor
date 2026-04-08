@@ -1,6 +1,13 @@
-import { formatCommands } from "./format";
+import { commands as blockCommands } from "./block";
+import { commands as formatCommands } from "./format";
+import { commands as listCommands } from "./list";
 
-export { formatCommands } from "./format";
+export {
+  commands as blockCommands,
+  INSERT_HEADING_COMMAND,
+  INSERT_QUOTE_COMMAND,
+} from "./block";
+export { commands as formatCommands } from "./format";
+export { commands as listCommands } from "./list";
 
-export const commands = [...formatCommands];
-
+export const commands = [...formatCommands, ...listCommands, ...blockCommands];

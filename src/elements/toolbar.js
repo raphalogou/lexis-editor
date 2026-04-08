@@ -1,68 +1,73 @@
-import { $getSelection, $isRangeSelection } from "lexical";
-import { formatCommands } from "../core/commands";
+import { commands } from "../core/commands";
 
 export class LexisToolbar extends HTMLElement {
-	/**
-	 * @type {import('../core/editor').Editor}
-	 */
-	#editor = null;
+  /**
+   * @type {import('../core/editor').Editor}
+   */
+  #editor = null;
 
-	#teardownFunction = null;
+  #teardownFunction = null;
 
-	#commands = { format: [] };
+  #commands = [];
 
-	connectedCallback() {
-		this.addEventListener("click", this.handleEditorCommand);
+  #buttonMap = new Map();
 
-		this.#commands.format = formatCommands.map((cmd) => cmd.id);
-	}
+  connectedCallback() {
+    this.addEventListener("click", this.handleEditorCommand);
 
-	disconnectedCallback() {
-		this.removeEventListener("click", this.handleEditorCommand);
-		this.#teardownFunction?.();
-	}
+    this.#commands = commands.map((cmd) => cmd.id);
 
-	/**
-	 * @param {import('../core/editor').Editor} editor
-	 */
-	attachEditor(editor) {
-		this.#teardownFunction = editor.lexicalEditor.registerUpdateListener(
-			({ editorState }) => {
-				editorState.read(() => this.syncControlsState());
-			},
-		);
+    // Cache button references for efficient updates
+    this.#commands.forEach((cmd) => {
+      const btn = this.querySelector(`[data-command='${cmd}']`);
+      if (btn) {
+        this.#buttonMap.set(cmd, btn);
+      }
+    });
+  }
 
-		this.#editor = editor;
-	}
+  disconnectedCallback() {
+    this.removeEventListener("click", this.handleEditorCommand);
+    this.#teardownFunction?.();
+    this.#buttonMap.clear();
+  }
 
-	handleEditorCommand(evt) {
-		if (!this.#editor) {
-			throw new Error(
-				"No editor has been attached to this toolbar. Did you forget to map it to the editor through the `toolbar` attribute ?",
-			);
-		}
+  /**
+   * @param {import('../core/editor').Editor} editor
+   */
+  attachEditor(editor) {
+    this.#teardownFunction = editor.lexicalEditor.registerUpdateListener(() => {
+      this.reflectEditorState();
+    });
 
-		const control = evt.target.closest("[data-command]");
-		if (!control) {
-			return;
-		}
+    this.#editor = editor;
+  }
 
-		this.#editor.runCommand(control.dataset.command);
-	}
+  handleEditorCommand = (evt) => {
+    if (!this.#editor) {
+      console.error(
+        "No editor has been attached to this toolbar. Did you forget to map it to the editor through the `toolbar` attribute?",
+      );
+      return;
+    }
 
-	syncControlsState() {
-		const selection = $getSelection();
-		if (!$isRangeSelection(selection)) {
-			return;
-		}
+    const control = evt.target.closest("[data-command]");
+    if (!control) {
+      return;
+    }
 
-		for (const cmd of this.#commands.format) {
-			this.querySelector(`[data-command='${cmd}']`)?.setAttribute(
-				"data-state",
-				selection.hasFormat(cmd) ? "active" : null,
-			);
-		}
-	}
+    this.#editor.runCommand(control.dataset.command);
+  };
+
+  reflectEditorState() {
+    this.#buttonMap.forEach((btn, cmd) => {
+      if (this.#editor.isActive(cmd)) {
+        btn.setAttribute("data-state", "active");
+      } else {
+        btn.removeAttribute("data-state");
+      }
+    });
+  }
 }
 
 customElements.define("lexis-toolbar", LexisToolbar);

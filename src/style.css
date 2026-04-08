@@ -3,64 +3,94 @@
 @import "sanitize.css/typography.css";
 
 .container {
-    width: 100%;
-    max-width: min(90vw, 1080px);
-    padding: 1rem;
-    margin-inline: auto;
+  width: 100%;
+  max-width: min(90vw, 1080px);
+  padding: 1rem;
+  margin-inline: auto;
 }
 
 .centered {
-    display: grid;
-    width: 100%;
+  display: grid;
+  width: 100%;
 }
 
 lexis-editor,
 [data-part="editor-container"] {
-    display: grid;
-    gap: 1rem;
+  display: grid;
+  gap: 1rem;
 }
 
 lexis-toolbar,
 [data-part="editor-toolbar"] {
-    display: flex;
-    gap: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
 [data-part="editor-root"] {
-    min-height: 16ch;
-    width: 100%;
-    border: 1px slategray solid;
-    border-radius: 6px;
-    cursor: auto;
+  min-height: 16ch;
+  width: 100%;
+  border: 1px slategray solid;
+  border-radius: 6px;
+  cursor: auto;
 }
 
 .lexis-content {
-    font-size: 16px;
-    padding: 0.65em 1em;
+  font-size: 16px;
+  padding: 0.65em 1em;
 
-    p {
-        margin: 0 0 0.35rem;
-    }
+  h1,
+  .h1,
+  h2,
+  .h2,
+  h3,
+  .h3,
+  h4,
+  .h4 {
+    margin: 0 0 0.5rem;
+  }
 
-    .font-bold {
-        font-weight: 600;
-    }
+  p,
+  ul,
+  ol {
+    margin: 0 0 0.35rem;
+  }
 
-    .underline {
-        text-decoration: underline;
+  li {
+    &:has(> ul),
+    &:has(> ol) {
+      list-style: none;
     }
+  }
 
-    .italic {
-        font-style: italic;
-    }
+  blockquote,
+  .quote {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    padding-left: 0.75rem;
+    border-left: 3px solid slategray;
+    color: #666;
+    font-style: italic;
+  }
+
+  .font-bold {
+    font-weight: 600;
+  }
+
+  .underline {
+    text-decoration: underline;
+  }
+
+  .italic {
+    font-style: italic;
+  }
 }
 
 .lexis-button {
-    border-radius: 4px;
-    padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
 
-    &:hover,
-    &[data-state="active"] {
-        background-color: rgba(0, 0, 0, 0.1);
-    }
+  &:hover,
+  &[data-state="active"] {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
 }

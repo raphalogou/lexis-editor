@@ -1,7 +1,12 @@
-import { buildEditorFromExtensions } from "@lexical/extension";
+import {
+  buildEditorFromExtensions,
+  TabIndentationExtension,
+} from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
+import { ListExtension } from "@lexical/list";
 import { RichTextExtension } from "@lexical/rich-text";
 import { defineExtension } from "lexical";
+import { registerHeading, registerQuote } from "./commands/block";
 
 /**
  * @typedef {Object} EditorCommand
@@ -14,126 +19,148 @@ import { defineExtension } from "lexical";
  */
 
 export class Editor {
-	#commands = {};
+  #commands = {};
 
-	/**
-	 * @param {HTMLElement} rootEl
-	 */
-	#rootEl = null;
+  /**
+   * @param {HTMLElement} rootEl
+   */
+  #rootEl = null;
 
-	/** @type {import('lexical').LexicalEditor} */
-	lexicalEditor = null;
+  /** @type {import('lexical').LexicalEditor} */
+  lexicalEditor = null;
 
-	/**
-	 * @param {HTMLElement} rootEl
-	 */
-	constructor(rootEl) {
-		this.lexicalEditor = buildEditorFromExtensions(
-			defineExtension({
-				name: "[root]",
-				namespace: "@lexis/editor",
-				dependencies: [RichTextExtension, HistoryExtension],
-				theme: {
-					text: {
-						bold: "font-bold",
-						italic: "italic",
-						underline: "underline",
-					},
-				},
-			}),
-		);
+  /**
+   * @param {HTMLElement} rootEl
+   */
+  constructor(rootEl) {
+    this.lexicalEditor = buildEditorFromExtensions(
+      defineExtension({
+        name: "[root]",
+        namespace: "@lexis/editor",
+        dependencies: [
+          RichTextExtension,
+          HistoryExtension,
+          TabIndentationExtension,
+          ListExtension,
+        ],
+        theme: {
+          quote: "quote",
+          heading: {
+            h1: "h1",
+            h2: "h2",
+            h3: "h3",
+            h4: "h4",
+            h5: "h5",
+            h6: "h6",
+          },
+          text: {
+            bold: "font-bold",
+            italic: "italic",
+            underline: "underline",
+          },
+        },
 
-		this.#rootEl = rootEl;
-		this.lexicalEditor.setRootElement(rootEl);
-	}
+        register(lexicalEditor) {
+          registerHeading(lexicalEditor);
+          registerQuote(lexicalEditor);
+        },
 
-	get commands() {
-		return Object.freeze({ ...this.#commands });
-	}
+        afterRegistration(lexicalEditor) {
+          lexicalEditor.setRootElement(rootEl);
+        },
+      }),
+    );
 
-	/** @param {EditorCommand} command */
-	registerCommand(command) {
-		if (!command.id) throw new Error("Command must have an id");
+    this.#rootEl = rootEl;
+  }
 
-		this.#commands[command.id] = command;
-	}
+  get commands() {
+    return Object.freeze({ ...this.#commands });
+  }
 
-	/**
-	 * @param {string} id
-	 * @param {EditorCommand} command
-	 */
-	replaceCommand(id, command) {
-		if (!this.hasCommand(id)) {
-			throw new Error(`Command "${id}" is not registered`);
-		}
+  /** @param {EditorCommand} command */
+  registerCommand(command) {
+    if (!command.id) throw new Error("Command must have an id");
 
-		this.#commands[id] = { ...command, id };
-	}
+    this.#commands[command.id] = command;
+  }
 
-	/** @param {string} id */
-	unregisterCommand(id) {
-		if (!this.hasCommand(id)) {
-			throw new Error(`Command "${id}" is not registered`);
-		}
+  /**
+   * @param {string} id
+   * @param {EditorCommand} command
+   */
+  replaceCommand(id, command) {
+    if (!this.hasCommand(id)) {
+      throw new Error(`Command "${id}" is not registered`);
+    }
 
-		delete this.#commands[id];
-	}
+    this.#commands[id] = { ...command, id };
+  }
 
-	/**
-	 * @param {string} id
-	 * @returns {boolean}
-	 */
-	hasCommand(id) {
-		return id in this.#commands;
-	}
+  /** @param {string} id */
+  unregisterCommand(id) {
+    if (!this.hasCommand(id)) {
+      throw new Error(`Command "${id}" is not registered`);
+    }
 
-	/**
-	 * @param {string} id
-	 * @returns {EditorCommand|null}
-	 */
-	getCommand(id) {
-		return this.#commands[id] ?? null;
-	}
+    delete this.#commands[id];
+  }
 
-	/**
-	 * @param {string} id
-	 * @param {any} [payload]
-	 */
-	runCommand(id, payload) {
-		if (!this.hasCommand(id)) {
-			throw new Error(`Command "${id}" is not registered`);
-		}
+  /**
+   * @param {string} id
+   * @returns {boolean}
+   */
+  hasCommand(id) {
+    return id in this.#commands;
+  }
 
-		this.getCommand(id).execute(this.lexicalEditor, payload);
-	}
+  /**
+   * @param {string} id
+   * @returns {EditorCommand|null}
+   */
+  getCommand(id) {
+    return this.#commands[id] ?? null;
+  }
 
-	/**
-	 * @param {string} id
-	 * @returns {boolean}
-	 */
-	isActive(id) {
-		if (!this.hasCommand(id)) return false;
+  /**
+   * @param {string} id
+   * @param {any} [payload]
+   */
+  runCommand(id, payload) {
+    if (!this.hasCommand(id)) {
+      throw new Error(`Command "${id}" is not registered`);
+    }
 
-		const cmd = this.getCommand(id);
-		if (!cmd.isActive) return false;
+    this.getCommand(id).execute(this.lexicalEditor, payload);
+  }
 
-		return this.lexicalEditor
-			.getEditorState()
-			.read(() => cmd.isActive(this.lexicalEditor.getEditorState()));
-	}
+  /**
+   * @param {string} id
+   * @returns {boolean}
+   */
+  isActive(id) {
+    if (!this.hasCommand(id)) return false;
 
-	/**
-	 * @param {string} id
-	 *@returns {boolean}
-	 */
-	isDisabled(id) {
-		if (!this.hasCommand(id)) return false;
+    const cmd = this.getCommand(id);
+    if (!cmd.isActive) return false;
 
-		const cmd = this.getCommand(id);
-		if (!cmd.isDisabled) return false;
+    return this.lexicalEditor
+      .getEditorState()
+      .read(() => cmd.isActive(this.lexicalEditor.getEditorState()));
+  }
 
-		return this.lexicalEditor
-			.getEditorState()
-			.read(() => cmd.isDisabled(this.lexicalEditor.getEditorState()));
-	}
+  /**
+   * @param {string} id
+   *@returns {boolean}
+   */
+  isDisabled(id) {
+    if (!this.hasCommand(id)) return false;
+
+    const cmd = this.getCommand(id);
+    if (!cmd.isDisabled) return false;
+
+    return this.lexicalEditor
+      .getEditorState()
+      .read(() => cmd.isDisabled(this.lexicalEditor.getEditorState()));
+  }
 }
