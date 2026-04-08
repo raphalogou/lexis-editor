@@ -89,8 +89,12 @@ lexis-toolbar,
   border-radius: 4px;
   padding: 0.25rem 0.5rem;
 
-  &:hover,
+  &:not(:disabled):hover,
   &[data-state="active"] {
     background-color: rgba(0, 0, 0, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
   }
 }

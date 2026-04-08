@@ -41,6 +41,8 @@ export class LexisToolbar extends HTMLElement {
     });
 
     this.#editor = editor;
+
+    this.reflectEditorState();
   }
 
   handleEditorCommand = (evt) => {
@@ -66,6 +68,8 @@ export class LexisToolbar extends HTMLElement {
       } else {
         btn.removeAttribute("data-state");
       }
+
+      btn.disabled = this.#editor.isDisabled(cmd);
     });
   }
 }

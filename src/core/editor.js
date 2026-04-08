@@ -5,7 +5,7 @@ import {
 import { HistoryExtension } from "@lexical/history";
 import { ListExtension } from "@lexical/list";
 import { RichTextExtension } from "@lexical/rich-text";
-import { defineExtension } from "lexical";
+import { configExtension, defineExtension } from "lexical";
 import { registerHeading, registerQuote } from "./commands/block";
 
 /**
@@ -13,8 +13,8 @@ import { registerHeading, registerQuote } from "./commands/block";
  * @property {string} id
  * @property {string} label
  * @property {string} [shortcut]
- * @property {(editorState: import('lexical').EditorState) => boolean} [isActive]
- * @property {(editorState: import('lexical').EditorState) => boolean} [isDisabled]
+ * @property {(editor: Editor) => boolean} [isActive]
+ * @property {(editor: Editor) => boolean} [isDisabled]
  * @property {(lexicalEditor: import('lexical').LexicalEditor, payload?: any) => void} execute
  */
 
@@ -28,6 +28,9 @@ export class Editor {
 
   /** @type {import('lexical').LexicalEditor} */
   lexicalEditor = null;
+
+  /** @type {import('@lexical/history').HistoryState} */
+  historyState = null;
 
   /**
    * @param {HTMLElement} rootEl
@@ -65,13 +68,16 @@ export class Editor {
           registerQuote(lexicalEditor);
         },
 
-        afterRegistration(lexicalEditor) {
+        afterRegistration: (lexicalEditor, _, state) => {
           lexicalEditor.setRootElement(rootEl);
+
+          const dep = state.getDependency(HistoryExtension);
+          this.historyState = dep.output.historyState.peek();
+
+          this.#rootEl = rootEl;
         },
       }),
     );
-
-    this.#rootEl = rootEl;
   }
 
   get commands() {
@@ -144,9 +150,7 @@ export class Editor {
     const cmd = this.getCommand(id);
     if (!cmd.isActive) return false;
 
-    return this.lexicalEditor
-      .getEditorState()
-      .read(() => cmd.isActive(this.lexicalEditor.getEditorState()));
+    return this.lexicalEditor.read(() => cmd.isActive(this));
   }
 
   /**
@@ -159,8 +163,6 @@ export class Editor {
     const cmd = this.getCommand(id);
     if (!cmd.isDisabled) return false;
 
-    return this.lexicalEditor
-      .getEditorState()
-      .read(() => cmd.isDisabled(this.lexicalEditor.getEditorState()));
+    return this.lexicalEditor.read(() => cmd.isDisabled(this));
   }
 }
