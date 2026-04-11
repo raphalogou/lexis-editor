@@ -75,6 +75,42 @@
                     >
                         Quote
                     </button>
+
+                    <el-popover data-lexis-controller="link">
+                        <button
+                            type="button"
+                            class="lexis-button"
+                            command="toggle-popover"
+                            commandfor="link-popover"
+                        >
+                            Link
+                        </button>
+
+                        <div id="link-popover" popover="auto">
+                            <input
+                                type="url"
+                                name="url"
+                                placeholder="https://"
+                                autofocus
+                            />
+
+                            <button
+                                type="button"
+                                data-command="link"
+                                class="lexis-button"
+                            >
+                                Link
+                            </button>
+                            <button
+                                type="button"
+                                data-command="unlink"
+                                class="lexis-button"
+                            >
+                                Unlink
+                            </button>
+                        </div>
+                    </el-popover>
+
                     <button
                         type="button"
                         data-command="undo"

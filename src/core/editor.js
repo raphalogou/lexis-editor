@@ -3,10 +3,12 @@ import {
   TabIndentationExtension,
 } from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
+import { LinkExtension } from "@lexical/link";
 import { ListExtension } from "@lexical/list";
 import { RichTextExtension } from "@lexical/rich-text";
-import { configExtension, defineExtension } from "lexical";
+import { defineExtension } from "lexical";
 import { registerHeading, registerQuote } from "./commands/block";
+import * as ControllerRegistry from "./controllers/registry";
 
 /**
  * @typedef {Object} EditorCommand
@@ -15,11 +17,14 @@ import { registerHeading, registerQuote } from "./commands/block";
  * @property {string} [shortcut]
  * @property {(editor: Editor) => boolean} [isActive]
  * @property {(editor: Editor) => boolean} [isDisabled]
+ * @property {(editor: Editor) => void} [register]
  * @property {(lexicalEditor: import('lexical').LexicalEditor, payload?: any) => void} execute
  */
 
 export class Editor {
   #commands = {};
+
+  #controllers = new Map();
 
   /**
    * @param {HTMLElement} rootEl
@@ -44,6 +49,7 @@ export class Editor {
           RichTextExtension,
           HistoryExtension,
           TabIndentationExtension,
+          LinkExtension,
           ListExtension,
         ],
         theme: {
@@ -71,22 +77,53 @@ export class Editor {
         afterRegistration: (lexicalEditor, _, state) => {
           lexicalEditor.setRootElement(rootEl);
 
-          const dep = state.getDependency(HistoryExtension);
-          this.historyState = dep.output.historyState.peek();
+          const extOutput = state.getDependency(HistoryExtension);
+          this.historyState = extOutput.output.historyState.peek();
 
           this.#rootEl = rootEl;
         },
       }),
     );
+
+    // Register all known controllers
+    this.#registerControllers();
   }
 
   get commands() {
     return Object.freeze({ ...this.#commands });
   }
 
+  registerController(name, klass) {
+    this.#controllers.set(name, klass);
+  }
+
+  /**
+   * Register all known controllers
+   * Called once per editor instance to set up commands
+   * @private
+   */
+  #registerControllers() {
+    for (const [id, ControllerClass] of ControllerRegistry.getAll()) {
+      if (typeof ControllerClass.register === "function") {
+        try {
+          ControllerClass.register(this);
+        } catch (error) {
+          console.error(
+            `[Editor] Failed to register controller "${id}":`,
+            error,
+          );
+        }
+      }
+    }
+  }
+
   /** @param {EditorCommand} command */
   registerCommand(command) {
     if (!command.id) throw new Error("Command must have an id");
+
+    if (command.register) {
+      command.register(this);
+    }
 
     this.#commands[command.id] = command;
   }
@@ -100,16 +137,11 @@ export class Editor {
       throw new Error(`Command "${id}" is not registered`);
     }
 
-    this.#commands[id] = { ...command, id };
-  }
-
-  /** @param {string} id */
-  unregisterCommand(id) {
-    if (!this.hasCommand(id)) {
-      throw new Error(`Command "${id}" is not registered`);
+    if (command.register) {
+      command.register(this);
     }
 
-    delete this.#commands[id];
+    this.#commands[id] = { ...command, id };
   }
 
   /**

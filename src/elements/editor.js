@@ -1,9 +1,9 @@
 import { commands } from "../core/commands";
 import { Editor } from "../core/editor";
 import { createElement } from "../helper";
-import { LexisToolbar } from "./toolbar";
+import { LexisToolbarElement } from "./toolbar";
 
-export class LexisEditor extends HTMLElement {
+export class LexisEditorElement extends HTMLElement {
   #editorInstance;
 
   constructor() {
@@ -29,13 +29,17 @@ export class LexisEditor extends HTMLElement {
   }
 
   connectedCallback() {
+    this.dispatchEvent(new CustomEvent("lexis:before-initialize"));
+
     const toolbar = this.#getToolbar() ?? this.#buildToolbar();
 
     toolbar.attachEditor(this.#editorInstance);
+
+    this.dispatchEvent(new CustomEvent("lexis:initialize"));
   }
 
   /**
-   * @returns {import('./toolbar').LexisToolbar}
+   * @returns {import('./toolbar').LexisToolbarElement}
    */
   #getToolbar() {
     let toolbar = this.querySelector("lexis-toolbar");
@@ -45,7 +49,7 @@ export class LexisEditor extends HTMLElement {
       toolbar = document.getElementById(toolbarAttr);
     }
 
-    return toolbar instanceof LexisToolbar ? toolbar : null;
+    return toolbar instanceof LexisToolbarElement ? toolbar : null;
   }
 
   #buildToolbar() {
@@ -54,5 +58,3 @@ export class LexisEditor extends HTMLElement {
     return toolbar;
   }
 }
-
-customElements.define("lexis-editor", LexisEditor);

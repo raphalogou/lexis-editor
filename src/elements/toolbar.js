@@ -1,6 +1,7 @@
-import { commands } from "../core/commands";
+import "./popover";
+import * as ControllerRegistry from "../core/controllers/registry";
 
-export class LexisToolbar extends HTMLElement {
+export class LexisToolbarElement extends HTMLElement {
   /**
    * @type {import('../core/editor').Editor}
    */
@@ -8,27 +9,27 @@ export class LexisToolbar extends HTMLElement {
 
   #teardownFunction = null;
 
-  #commands = [];
-
   #buttonMap = new Map();
 
   connectedCallback() {
-    this.addEventListener("click", this.handleEditorCommand);
+    // Register command controls
+    for (const btn of this.querySelectorAll("[data-command]")) {
+      btn.type = "button";
+      this.#buttonMap.set(btn.dataset.command, btn);
+    }
 
-    this.#commands = commands.map((cmd) => cmd.id);
-
-    // Cache button references for efficient updates
-    this.#commands.forEach((cmd) => {
-      const btn = this.querySelector(`[data-command='${cmd}']`);
-      if (btn) {
-        this.#buttonMap.set(cmd, btn);
-      }
-    });
+    this.addEventListener("click", this.dispatchCommandEvent);
+    this.addEventListener("editor:command", this.handleEditorCommand);
   }
 
   disconnectedCallback() {
-    this.removeEventListener("click", this.handleEditorCommand);
+    this.removeEventListener("click", this.dispatchCommandEvent);
+    this.removeEventListener("editor:command", this.handleEditorCommand);
     this.#teardownFunction?.();
+
+    this.#buttonMap.forEach((btn) => {
+      btn.removeEventListener("click", this.dispatchCommandEvent);
+    });
     this.#buttonMap.clear();
   }
 
@@ -36,14 +37,55 @@ export class LexisToolbar extends HTMLElement {
    * @param {import('../core/editor').Editor} editor
    */
   attachEditor(editor) {
+    this.#editor = editor;
+
+    // Discover and mount controllers
+    this.#discoverControllers();
+
     this.#teardownFunction = editor.lexicalEditor.registerUpdateListener(() => {
       this.reflectEditorState();
     });
 
-    this.#editor = editor;
-
     this.reflectEditorState();
   }
+
+  /**
+   * Discover [data-lexis-controller] popovers and mount their controllers
+   * @private
+   */
+  #discoverControllers() {
+    for (const el of this.querySelectorAll("[data-lexis-controller]")) {
+      const controllerId = el.dataset.lexisController;
+      const ControllerClass = ControllerRegistry.get(controllerId);
+
+      if (!ControllerClass) {
+        console.error(`[Toolbar] Unknown controller: "${controllerId}"`);
+        return;
+      }
+
+      try {
+        const controller = new ControllerClass(el);
+        controller.mount(this.#editor);
+      } catch (error) {
+        console.error(
+          `[Toolbar] Failed to mount controller "${controllerId}":`,
+          error,
+        );
+      }
+    }
+  }
+
+  dispatchCommandEvent = (evt) => {
+    const target = evt.target.closest("[data-command]");
+    if (!target) return;
+
+    target.dispatchEvent(
+      new CustomEvent("editor:command", {
+        detail: { command: target.dataset.command },
+        bubbles: true,
+      }),
+    );
+  };
 
   handleEditorCommand = (evt) => {
     if (!this.#editor) {
@@ -53,12 +95,7 @@ export class LexisToolbar extends HTMLElement {
       return;
     }
 
-    const control = evt.target.closest("[data-command]");
-    if (!control) {
-      return;
-    }
-
-    this.#editor.runCommand(control.dataset.command);
+    this.#editor.runCommand(evt.detail.command, evt.detail.payload);
   };
 
   reflectEditorState() {
@@ -73,5 +110,3 @@ export class LexisToolbar extends HTMLElement {
     });
   }
 }
-
-customElements.define("lexis-toolbar", LexisToolbar);
