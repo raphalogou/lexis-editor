@@ -5,6 +5,17 @@ import {
 import { HistoryExtension } from "@lexical/history";
 import { AutoLinkExtension, createLinkMatcherWithRegExp } from "@lexical/link";
 import { ListExtension } from "@lexical/list";
+import {
+  BOLD_STAR,
+  HEADING,
+  ITALIC_UNDERSCORE,
+  LINK,
+  ORDERED_LIST,
+  QUOTE,
+  registerMarkdownShortcuts,
+  STRIKETHROUGH,
+  UNORDERED_LIST,
+} from "@lexical/markdown";
 import { RichTextExtension } from "@lexical/rich-text";
 import { configExtension, defineExtension } from "lexical";
 import { registerHeading, registerQuote } from "./commands/block";
@@ -26,6 +37,17 @@ const URL_REGEX =
 
 const EMAIL_REGEX =
   /(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))/;
+
+const MARKDOWN_TRANSFORMERS = [
+  HEADING,
+  QUOTE,
+  UNORDERED_LIST,
+  ORDERED_LIST,
+  BOLD_STAR,
+  ITALIC_UNDERSCORE,
+  STRIKETHROUGH,
+  LINK,
+];
 
 export class Editor {
   #commands = {};
@@ -87,6 +109,8 @@ export class Editor {
         register(lexicalEditor) {
           registerHeading(lexicalEditor);
           registerQuote(lexicalEditor);
+
+          registerMarkdownShortcuts(lexicalEditor, MARKDOWN_TRANSFORMERS);
         },
 
         afterRegistration: (lexicalEditor, _, state) => {
