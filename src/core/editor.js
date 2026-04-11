@@ -3,10 +3,10 @@ import {
   TabIndentationExtension,
 } from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
-import { LinkExtension } from "@lexical/link";
+import { AutoLinkExtension, createLinkMatcherWithRegExp } from "@lexical/link";
 import { ListExtension } from "@lexical/list";
 import { RichTextExtension } from "@lexical/rich-text";
-import { defineExtension } from "lexical";
+import { configExtension, defineExtension } from "lexical";
 import { registerHeading, registerQuote } from "./commands/block";
 import * as ControllerRegistry from "./controllers/registry";
 
@@ -20,6 +20,12 @@ import * as ControllerRegistry from "./controllers/registry";
  * @property {(editor: Editor) => void} [register]
  * @property {(lexicalEditor: import('lexical').LexicalEditor, payload?: any) => void} execute
  */
+
+const URL_REGEX =
+  /((https?:\/\/(www\.)?)|(www\.))[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)(?<![-.+():%])/;
+
+const EMAIL_REGEX =
+  /(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))/;
 
 export class Editor {
   #commands = {};
@@ -49,8 +55,17 @@ export class Editor {
           RichTextExtension,
           HistoryExtension,
           TabIndentationExtension,
-          LinkExtension,
           ListExtension,
+          configExtension(AutoLinkExtension, {
+            matchers: [
+              createLinkMatcherWithRegExp(URL_REGEX, (text) => {
+                return text.startsWith("http") ? text : `https://${text}`;
+              }),
+              createLinkMatcherWithRegExp(EMAIL_REGEX, (text) => {
+                return `mailto:${text}`;
+              }),
+            ],
+          }),
         ],
         theme: {
           quote: "quote",
