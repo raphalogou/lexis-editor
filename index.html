@@ -10,125 +10,133 @@
         <main class="container centered">
             <h1>Welcome to Lexis Editor</h1>
 
-            <div style="display: grid; gap: 1em">
-                <lexis-toolbar id="edx-toolbar">
-                    <button
-                        type="button"
-                        data-command="bold"
-                        class="lexis-button"
-                    >
-                        Bold
-                    </button>
-                    <button
-                        type="button"
-                        data-command="italic"
-                        class="lexis-button"
-                    >
-                        Italic
-                    </button>
-                    <button
-                        type="button"
-                        data-command="underline"
-                        class="lexis-button"
-                    >
-                        Underline
-                    </button>
-                    <button
-                        type="button"
-                        data-command="paragraph"
-                        class="lexis-button"
-                    >
-                        Normal
-                    </button>
-                    <button
-                        type="button"
-                        data-command="bullet-list"
-                        class="lexis-button"
-                    >
-                        Bullet List
-                    </button>
-                    <button
-                        type="button"
-                        data-command="number-list"
-                        class="lexis-button"
-                    >
-                        Number List
-                    </button>
-                    <button
-                        type="button"
-                        data-command="heading-2"
-                        class="lexis-button"
-                    >
-                        Heading
-                    </button>
-                    <button
-                        type="button"
-                        data-command="heading-3"
-                        class="lexis-button"
-                    >
-                        Sub Heading
-                    </button>
-                    <button
-                        type="button"
-                        data-command="quote"
-                        class="lexis-button"
-                    >
-                        Quote
-                    </button>
-
-                    <el-popover data-lexis-controller="link">
+            <form method="get">
+                <div style="display: grid; gap: 1em">
+                    <lexis-toolbar id="edx-toolbar">
                         <button
                             type="button"
+                            data-command="bold"
                             class="lexis-button"
-                            command="toggle-popover"
-                            commandfor="link-popover"
                         >
-                            Link
+                            Bold
+                        </button>
+                        <button
+                            type="button"
+                            data-command="italic"
+                            class="lexis-button"
+                        >
+                            Italic
+                        </button>
+                        <button
+                            type="button"
+                            data-command="underline"
+                            class="lexis-button"
+                        >
+                            Underline
+                        </button>
+                        <button
+                            type="button"
+                            data-command="paragraph"
+                            class="lexis-button"
+                        >
+                            Normal
+                        </button>
+                        <button
+                            type="button"
+                            data-command="bullet-list"
+                            class="lexis-button"
+                        >
+                            Bullet List
+                        </button>
+                        <button
+                            type="button"
+                            data-command="number-list"
+                            class="lexis-button"
+                        >
+                            Number List
+                        </button>
+                        <button
+                            type="button"
+                            data-command="heading-2"
+                            class="lexis-button"
+                        >
+                            Heading
+                        </button>
+                        <button
+                            type="button"
+                            data-command="heading-3"
+                            class="lexis-button"
+                        >
+                            Sub Heading
+                        </button>
+                        <button
+                            type="button"
+                            data-command="quote"
+                            class="lexis-button"
+                        >
+                            Quote
                         </button>
 
-                        <div id="link-popover" popover="auto">
-                            <input
-                                type="url"
-                                name="url"
-                                placeholder="https://"
-                                autofocus
-                            />
-
+                        <el-popover data-lexis-controller="link">
                             <button
                                 type="button"
-                                data-command="link"
                                 class="lexis-button"
+                                command="toggle-popover"
+                                commandfor="link-popover"
                             >
                                 Link
                             </button>
-                            <button
-                                type="button"
-                                data-command="unlink"
-                                class="lexis-button"
-                            >
-                                Unlink
-                            </button>
-                        </div>
-                    </el-popover>
 
-                    <button
-                        type="button"
-                        data-command="undo"
-                        class="lexis-button"
-                    >
-                        Undo
-                    </button>
-                    <button
-                        type="button"
-                        data-command="redo"
-                        class="lexis-button"
-                    >
-                        Redo
-                    </button>
-                </lexis-toolbar>
+                            <div id="link-popover" popover="auto">
+                                <input
+                                    type="url"
+                                    name="url"
+                                    placeholder="https://"
+                                    autofocus
+                                />
 
-                <lexis-editor toolbar="edx-toolbar"></lexis-editor>
-            </div>
+                                <button
+                                    type="button"
+                                    data-command="link"
+                                    class="lexis-button"
+                                >
+                                    Link
+                                </button>
+                                <button
+                                    type="button"
+                                    data-command="unlink"
+                                    class="lexis-button"
+                                >
+                                    Unlink
+                                </button>
+                            </div>
+                        </el-popover>
+
+                        <button
+                            type="button"
+                            data-command="undo"
+                            class="lexis-button"
+                        >
+                            Undo
+                        </button>
+                        <button
+                            type="button"
+                            data-command="redo"
+                            class="lexis-button"
+                        >
+                            Redo
+                        </button>
+                    </lexis-toolbar>
+
+                    <lexis-editor
+                        name="content"
+                        toolbar="edx-toolbar"
+                        required
+                    ></lexis-editor>
+
+                    <button type="submit">Submit</button>
+                </div>
+            </form>
         </main>
         <script type="module" src="/src/main.js"></script>
     </body>

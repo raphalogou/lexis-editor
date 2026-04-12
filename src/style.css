@@ -15,18 +15,18 @@
 }
 
 lexis-editor,
-[data-part="editor-container"] {
+[data-slot="editor-root"] {
   display: grid;
   gap: 1rem;
 }
 
 lexis-toolbar,
-[data-part="editor-toolbar"] {
+[data-slot="editor-toolbar"] {
   display: flex;
   gap: 0.5rem;
 }
 
-[data-part="editor-root"] {
+[data-slot="editor-content"] {
   min-height: 16ch;
   width: 100%;
   border: 1px slategray solid;

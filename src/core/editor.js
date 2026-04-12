@@ -6,6 +6,7 @@ import { HistoryExtension } from "@lexical/history";
 import { AutoLinkExtension, createLinkMatcherWithRegExp } from "@lexical/link";
 import { ListExtension } from "@lexical/list";
 import {
+  $convertToMarkdownString,
   BOLD_STAR,
   HEADING,
   ITALIC_UNDERSCORE,
@@ -17,7 +18,7 @@ import {
   UNORDERED_LIST,
 } from "@lexical/markdown";
 import { RichTextExtension } from "@lexical/rich-text";
-import { configExtension, defineExtension } from "lexical";
+import { $getRoot, configExtension, defineExtension } from "lexical";
 import { registerHeading, registerQuote } from "./commands/block";
 import * as ControllerRegistry from "./controllers/registry";
 
@@ -130,6 +131,20 @@ export class Editor {
 
   get commands() {
     return Object.freeze({ ...this.#commands });
+  }
+
+  get markdownValue() {
+    return this.lexicalEditor.read(() =>
+      $convertToMarkdownString(MARKDOWN_TRANSFORMERS, $getRoot()),
+    );
+  }
+
+  get textValue() {
+    return this.lexicalEditor.read(() => $getRoot().getTextContent());
+  }
+
+  get isEmpty() {
+    return this.textValue.length === 0;
   }
 
   registerController(name, klass) {
