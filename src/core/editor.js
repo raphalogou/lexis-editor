@@ -1,26 +1,17 @@
-import {
-  buildEditorFromExtensions,
-  TabIndentationExtension,
-} from "@lexical/extension";
+import { buildEditorFromExtensions } from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
-import { AutoLinkExtension, createLinkMatcherWithRegExp } from "@lexical/link";
-import { ListExtension } from "@lexical/list";
-import {
-  $convertToMarkdownString,
-  BOLD_STAR,
-  HEADING,
-  ITALIC_UNDERSCORE,
-  LINK,
-  ORDERED_LIST,
-  QUOTE,
-  registerMarkdownShortcuts,
-  STRIKETHROUGH,
-  UNORDERED_LIST,
-} from "@lexical/markdown";
-import { RichTextExtension } from "@lexical/rich-text";
-import { $getRoot, configExtension, defineExtension } from "lexical";
-import { registerHeading, registerQuote } from "./commands/block";
+import { $generateHtmlFromNodes } from "@lexical/html";
+import { $convertToMarkdownString } from "@lexical/markdown";
+import DOMPurify from "dompurify";
+import { $getRoot, defineExtension } from "lexical";
 import * as ControllerRegistry from "./controllers/registry";
+import { ClipboardExtension } from "./extensions/clipboard";
+import { LexisExtension } from "./extensions/extension";
+import {
+  MARKDOWN_TRANSFORMERS,
+  MarkdownExtension,
+} from "./extensions/markdown";
+import { RichTextExtension } from "./extensions/rich-text";
 
 /**
  * @typedef {Object} EditorCommand
@@ -33,27 +24,12 @@ import * as ControllerRegistry from "./controllers/registry";
  * @property {(lexicalEditor: import('lexical').LexicalEditor, payload?: any) => void} execute
  */
 
-const URL_REGEX =
-  /((https?:\/\/(www\.)?)|(www\.))[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)(?<![-.+():%])/;
-
-const EMAIL_REGEX =
-  /(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))/;
-
-const MARKDOWN_TRANSFORMERS = [
-  HEADING,
-  QUOTE,
-  UNORDERED_LIST,
-  ORDERED_LIST,
-  BOLD_STAR,
-  ITALIC_UNDERSCORE,
-  STRIKETHROUGH,
-  LINK,
-];
-
 export class Editor {
   #commands = {};
 
   #controllers = new Map();
+
+  #extensions = new Map();
 
   /**
    * @param {HTMLElement} rootEl
@@ -69,73 +45,34 @@ export class Editor {
   /**
    * @param {HTMLElement} rootEl
    */
-  constructor(rootEl) {
-    this.lexicalEditor = buildEditorFromExtensions(
-      defineExtension({
-        name: "[root]",
-        namespace: "@lexis/editor",
-        dependencies: [
-          RichTextExtension,
-          HistoryExtension,
-          TabIndentationExtension,
-          ListExtension,
-          configExtension(AutoLinkExtension, {
-            matchers: [
-              createLinkMatcherWithRegExp(URL_REGEX, (text) => {
-                return text.startsWith("http") ? text : `https://${text}`;
-              }),
-              createLinkMatcherWithRegExp(EMAIL_REGEX, (text) => {
-                return `mailto:${text}`;
-              }),
-            ],
-          }),
-        ],
-        theme: {
-          quote: "quote",
-          heading: {
-            h1: "h1",
-            h2: "h2",
-            h3: "h3",
-            h4: "h4",
-            h5: "h5",
-            h6: "h6",
-          },
-          text: {
-            bold: "font-bold",
-            italic: "italic",
-            underline: "underline",
-          },
-        },
+  constructor(
+    rootEl,
+    config = { markdown: true, extensions: [], initialValue: null },
+  ) {
+    this.config = config;
 
-        register(lexicalEditor) {
-          registerHeading(lexicalEditor);
-          registerQuote(lexicalEditor);
-
-          registerMarkdownShortcuts(lexicalEditor, MARKDOWN_TRANSFORMERS);
-        },
-
-        afterRegistration: (lexicalEditor, _, state) => {
-          lexicalEditor.setRootElement(rootEl);
-
-          const extOutput = state.getDependency(HistoryExtension);
-          this.historyState = extOutput.output.historyState.peek();
-
-          this.#rootEl = rootEl;
-        },
-      }),
-    );
-
-    // Register all known controllers
+    this.#registerExtensions();
     this.#registerControllers();
+
+    this.#buildEditor(rootEl);
+  }
+
+  /**
+   * @returns {Boolean}
+   */
+  get supportsMarkdown() {
+    return this.config.markdown;
   }
 
   get commands() {
     return Object.freeze({ ...this.#commands });
   }
 
-  get markdownValue() {
+  get value() {
     return this.lexicalEditor.read(() =>
-      $convertToMarkdownString(MARKDOWN_TRANSFORMERS, $getRoot()),
+      this.supportsMarkdown
+        ? $convertToMarkdownString(MARKDOWN_TRANSFORMERS, $getRoot())
+        : DOMPurify.sanitize($generateHtmlFromNodes(this.lexicalEditor)),
     );
   }
 
@@ -223,6 +160,7 @@ export class Editor {
       throw new Error(`Command "${id}" is not registered`);
     }
 
+    this.lexicalEditor.focus();
     this.getCommand(id).execute(this.lexicalEditor, payload);
   }
 
@@ -241,7 +179,7 @@ export class Editor {
 
   /**
    * @param {string} id
-   *@returns {boolean}
+   * @returns {boolean}
    */
   isDisabled(id) {
     if (!this.hasCommand(id)) return false;
@@ -250,5 +188,75 @@ export class Editor {
     if (!cmd.isDisabled) return false;
 
     return this.lexicalEditor.read(() => cmd.isDisabled(this));
+  }
+
+  #buildEditor(rootEl) {
+    this.lexicalEditor = buildEditorFromExtensions(
+      defineExtension({
+        name: "[root]",
+        namespace: "@lexis/editor",
+        theme: {
+          quote: "quote",
+          heading: {
+            h1: "h1",
+            h2: "h2",
+            h3: "h3",
+            h4: "h4",
+            h5: "h5",
+            h6: "h6",
+          },
+          text: {
+            bold: "font-bold",
+            italic: "italic",
+            underline: "underline",
+          },
+        },
+
+        afterRegistration: (lexicalEditor, _, state) => {
+          lexicalEditor.setRootElement(rootEl);
+
+          const extOutput = state.getDependency(HistoryExtension);
+          this.historyState = extOutput.output.historyState.peek();
+
+          this.#rootEl = rootEl;
+        },
+      }),
+      ...this.enabledExtensions
+        .map((ext) => ext.lexicalExtension)
+        .filter(Boolean),
+    );
+  }
+
+  #registerExtensions() {
+    for (const ExtensionClass of [
+      ...this.baseExtensions,
+      ...(this.config.extensions ?? []),
+    ]) {
+      const extension = new ExtensionClass(this);
+      if (!(extension instanceof LexisExtension)) {
+        console.error("[Editor] Extensions should extend LexisExtension class");
+        continue;
+      }
+
+      this.#extensions.set(extension.name, extension);
+    }
+  }
+
+  get baseExtensions() {
+    return [RichTextExtension, ClipboardExtension, MarkdownExtension];
+  }
+
+  /**
+   * @returns {import('./extensions/extension').LexisExtension[]}
+   */
+  get extensions() {
+    return Array.from(this.#extensions.values());
+  }
+
+  /**
+   * @returns {import('./extensions/extension').LexisExtension[]}
+   */
+  get enabledExtensions() {
+    return this.extensions.filter((ext) => ext.enabled);
   }
 }

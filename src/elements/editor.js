@@ -53,7 +53,7 @@ export class LexisEditorElement extends HTMLElement {
   }
 
   get value() {
-    return this.editor.markdownValue;
+    return this.editor.value;
   }
 
   get form() {

@@ -11,12 +11,15 @@
   "dependencies": {
     "@lexical/extension": "^0.42.0",
     "@lexical/history": "^0.42.0",
+    "@lexical/html": "^0.42.0",
     "@lexical/link": "^0.42.0",
     "@lexical/list": "^0.42.0",
     "@lexical/markdown": "^0.42.0",
     "@lexical/rich-text": "^0.42.0",
     "@lexical/utils": "^0.42.0",
-    "lexical": "^0.42.0"
+    "dompurify": "^3.4.0",
+    "lexical": "^0.42.0",
+    "marked": "^18.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",

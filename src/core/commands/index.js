@@ -6,8 +6,8 @@ import { commands as listCommands } from "./list";
 
 export {
   commands as blockCommands,
-  INSERT_HEADING_COMMAND,
-  INSERT_QUOTE_COMMAND,
+  TOGGLE_HEADING_COMMAND,
+  TOGGLE_QUOTE_COMMAND,
 } from "./block";
 export { commands as formatCommands } from "./format";
 export { commands as historyCommands } from "./history";
