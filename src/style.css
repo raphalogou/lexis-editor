@@ -3,98 +3,103 @@
 @import "sanitize.css/typography.css";
 
 .container {
-  width: 100%;
-  max-width: min(90vw, 1080px);
-  padding: 1rem;
-  margin-inline: auto;
+    width: 100%;
+    max-width: min(90vw, 1080px);
+    padding: 1rem;
+    margin-inline: auto;
 }
 
 .centered {
-  display: grid;
-  width: 100%;
+    display: grid;
+    width: 100%;
 }
 
 lexis-editor,
 [data-slot="editor-root"] {
-  display: grid;
-  gap: 1rem;
+    display: grid;
+    gap: 1rem;
 }
 
 lexis-toolbar,
 [data-slot="editor-toolbar"] {
-  display: flex;
-  gap: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
 }
 
 [data-slot="editor-content"] {
-  min-height: 16ch;
-  width: 100%;
-  border: 1px slategray solid;
-  border-radius: 6px;
-  cursor: auto;
+    min-height: 16ch;
+    width: 100%;
+    border: 1px slategray solid;
+    border-radius: 6px;
+    cursor: auto;
 }
 
 .lexis-content {
-  font-size: 16px;
-  padding: 0.65em 1em;
+    font-size: 16px;
+    padding: 0.65em 1em;
 
-  h1,
-  .h1,
-  h2,
-  .h2,
-  h3,
-  .h3,
-  h4,
-  .h4 {
-    margin: 0 0 0.5rem;
-  }
-
-  p,
-  ul,
-  ol {
-    margin: 0 0 0.35rem;
-  }
-
-  li {
-    &:has(> ul),
-    &:has(> ol) {
-      list-style: none;
+    h1,
+    .h1,
+    h2,
+    .h2,
+    h3,
+    .h3,
+    h4,
+    .h4 {
+        margin: 0 0 0.5rem;
     }
-  }
 
-  blockquote,
-  .quote {
-    margin: 0.5rem 0;
-    padding: 0.5rem;
-    padding-left: 0.75rem;
-    border-left: 3px solid slategray;
-    color: #666;
-    font-style: italic;
-  }
+    p,
+    ul,
+    ol {
+        margin: 0 0 0.35rem;
+    }
 
-  .font-bold {
-    font-weight: 600;
-  }
+    li {
+        &:has(> ul),
+        &:has(> ol) {
+            list-style: none;
+        }
+    }
 
-  .underline {
-    text-decoration: underline;
-  }
+    blockquote,
+    .quote {
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+        padding-left: 0.75rem;
+        border-left: 3px solid slategray;
+        color: #666;
+        font-style: italic;
+    }
 
-  .italic {
-    font-style: italic;
-  }
+    .font-bold {
+        font-weight: 600;
+    }
+
+    .underline {
+        text-decoration: underline;
+    }
+
+    .italic {
+        font-style: italic;
+    }
 }
 
 .lexis-button {
-  border-radius: 4px;
-  padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
 
-  &:not(:disabled):hover,
-  &[data-state="active"] {
-    background-color: rgba(0, 0, 0, 0.1);
-  }
+    &:not(:disabled):hover,
+    &[data-state="active"] {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
 
-  &:disabled {
-    opacity: 0.5;
-  }
+    &:disabled {
+        opacity: 0.5;
+    }
+}
+
+.input-group {
+    display: flex;
+    gap: 0.35rem;
 }

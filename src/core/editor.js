@@ -4,9 +4,9 @@ import { $generateHtmlFromNodes } from "@lexical/html";
 import { $convertToMarkdownString } from "@lexical/markdown";
 import DOMPurify from "dompurify";
 import { $getRoot, defineExtension } from "lexical";
-import * as ControllerRegistry from "./controllers/registry";
 import { ClipboardExtension } from "./extensions/clipboard";
 import { LexisExtension } from "./extensions/extension";
+import { LinkExtension } from "./extensions/link";
 import {
   MARKDOWN_TRANSFORMERS,
   MarkdownExtension,
@@ -26,8 +26,6 @@ import { RichTextExtension } from "./extensions/rich-text";
 
 export class Editor {
   #commands = {};
-
-  #controllers = new Map();
 
   #extensions = new Map();
 
@@ -52,9 +50,7 @@ export class Editor {
     this.config = config;
 
     this.#registerExtensions();
-    this.#registerControllers();
-
-    this.#buildEditor(rootEl);
+    this.#buildLexicalEditor(rootEl);
   }
 
   /**
@@ -82,30 +78,6 @@ export class Editor {
 
   get isEmpty() {
     return this.textValue.length === 0;
-  }
-
-  registerController(name, klass) {
-    this.#controllers.set(name, klass);
-  }
-
-  /**
-   * Register all known controllers
-   * Called once per editor instance to set up commands
-   * @private
-   */
-  #registerControllers() {
-    for (const [id, ControllerClass] of ControllerRegistry.getAll()) {
-      if (typeof ControllerClass.register === "function") {
-        try {
-          ControllerClass.register(this);
-        } catch (error) {
-          console.error(
-            `[Editor] Failed to register controller "${id}":`,
-            error,
-          );
-        }
-      }
-    }
   }
 
   /** @param {EditorCommand} command */
@@ -190,7 +162,7 @@ export class Editor {
     return this.lexicalEditor.read(() => cmd.isDisabled(this));
   }
 
-  #buildEditor(rootEl) {
+  #buildLexicalEditor(rootEl) {
     this.lexicalEditor = buildEditorFromExtensions(
       defineExtension({
         name: "[root]",
@@ -243,7 +215,12 @@ export class Editor {
   }
 
   get baseExtensions() {
-    return [RichTextExtension, ClipboardExtension, MarkdownExtension];
+    return [
+      RichTextExtension,
+      LinkExtension,
+      ClipboardExtension,
+      MarkdownExtension,
+    ];
   }
 
   /**

@@ -6,7 +6,7 @@ export class LexisExtension {
   editor;
 
   get name() {
-    throw new Error("This method should be implemented");
+    throw new Error("Implement name getter");
   }
 
   /**
@@ -25,5 +25,20 @@ export class LexisExtension {
 
   get enabled() {
     return true;
+  }
+
+  /**
+   * @returns {import('../editor').EditorCommand[]}
+   */
+  get commands() {
+    return [];
+  }
+
+  /**
+   * @param {import('../../elements').LexisToolbarElement} toolbarEl
+   * @returns {HTMLElement|null}
+   */
+  render(toolbarEl) {
+    return null;
   }
 }

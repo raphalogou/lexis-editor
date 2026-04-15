@@ -1,23 +1,61 @@
+import { defineExtension } from "lexical";
 import { $getLinkNode } from "../commands/link";
-import { Controller } from "./controller";
+import { LexisExtension } from "./extension";
 
-export class LinkController extends Controller {
+export class LinkExtension extends LexisExtension {
+  name = "link";
+
   /** @type {HTMLInputElement|null} */
   #urlInput = null;
 
   /** @type {HTMLElement} */
   #popoverEl = null;
 
-  /** @type {import('../editor').Editor|null} */
-  #editor = null;
-
   /**
-   * @param {import('../editor').Editor} editor
+   * @param {import('../../elements').LexisToolbarElement} toolbarEl
+   * @returns {HTMLElement|null}
    */
-  mount(editor) {
-    this.#editor = editor;
+  render(toolbarEl) {
+    this.element =
+      toolbarEl.querySelector("[data-lexis-extension='link']") ??
+      this.#buildPopover();
+
     this.#initializeElements();
     this.#attachEventListeners();
+
+    return this.element;
+  }
+
+  #buildPopover() {
+    return (
+      <el-popover data-lexis-extension="link">
+        <button
+          type="button"
+          class="lexis-button"
+          command="toggle-popover"
+          commandfor="link-popover"
+        >
+          Link
+        </button>
+
+        <div id="link-popover" popover="auto">
+          <input
+            type="url"
+            name="url"
+            placeholder="https://"
+            autofocus
+            form="lexis/popover"
+          />
+
+          <button type="button" data-command="link" class="lexis-button">
+            Link
+          </button>
+          <button type="button" data-command="unlink" class="lexis-button">
+            Unlink
+          </button>
+        </div>
+      </el-popover>
+    );
   }
 
   /**
@@ -27,12 +65,12 @@ export class LinkController extends Controller {
   #initializeElements() {
     this.#urlInput = this.element.querySelector("[name='url']");
     if (!this.#urlInput) {
-      throw new Error("LinkController requires an input[name='url'] element");
+      throw new Error("LinkExtension requires an input[name='url'] element");
     }
 
     this.#popoverEl = this.element.querySelector("[popover]");
     if (!this.#popoverEl) {
-      throw new Error("LinkController requires a [popover] element");
+      throw new Error("LinkExtension requires a [popover] element");
     }
 
     this.#popoverEl.popover = "auto";
@@ -57,8 +95,8 @@ export class LinkController extends Controller {
     this.#urlInput.addEventListener("change", () => this.#insertLink());
 
     this.#popoverEl.addEventListener("toggle", (evt) => {
-      if (evt.newState === "open" && this.#editor.isActive("link")) {
-        this.#editor.lexicalEditor.read(() => {
+      if (evt.newState === "open" && this.editor.isActive("link")) {
+        this.editor.lexicalEditor.read(() => {
           const linkNode = $getLinkNode();
           if (linkNode) {
             this.#urlInput.value = linkNode.getURL();
@@ -85,7 +123,7 @@ export class LinkController extends Controller {
       return;
     }
 
-    this.#editor.runCommand("link", { url });
+    this.editor.runCommand("link", { url });
     this.#popoverEl?.hidePopover();
     this.#urlInput.value = "";
   }
@@ -95,7 +133,7 @@ export class LinkController extends Controller {
    * @private
    */
   #removeLink() {
-    this.#editor.runCommand("unlink");
+    this.editor.runCommand("unlink");
     this.#popoverEl?.hidePopover();
     this.#urlInput.value = "";
   }

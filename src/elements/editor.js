@@ -16,6 +16,11 @@ export class LexisEditorElement extends HTMLElement {
   /** @type {String} */
   #lastValue = "";
 
+  /**
+   * @type {import('./toolbar').LexisToolbarElement}
+   */
+  toolbar = null;
+
   static formAssociated = true;
   static observedAttributes = ["required"];
 
@@ -29,12 +34,11 @@ export class LexisEditorElement extends HTMLElement {
   connectedCallback() {
     this.tabIndex = -1;
 
-    const toolbar = this.#getToolbar() ?? this.#buildToolbar();
-    toolbar.attachEditor(this.editor);
-
     this.#setupBlurListener();
     this.#setupEditorUpdateListener();
     this.#validate();
+
+    this.#attachToolbar();
   }
 
   attributeChangedCallback(name) {
@@ -98,6 +102,16 @@ export class LexisEditorElement extends HTMLElement {
 
     for (const cmd of commands) {
       this.#editorInstance.registerCommand(cmd);
+    }
+  }
+
+  #attachToolbar() {
+    this.toolbar = this.#getToolbar() ?? this.#buildToolbar();
+    this.toolbar.attachEditor(this.editor);
+
+    for (const ext of this.editor.enabledExtensions) {
+      const control = ext.render(this.toolbar);
+      control && this.toolbar.append(control);
     }
   }
 

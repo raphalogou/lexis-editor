@@ -1,5 +1,4 @@
 import "./popover";
-import * as ControllerRegistry from "../core/controllers/registry";
 
 export class LexisToolbarElement extends HTMLElement {
   /**
@@ -39,40 +38,11 @@ export class LexisToolbarElement extends HTMLElement {
   attachEditor(editor) {
     this.#editor = editor;
 
-    // Discover and mount controllers
-    this.#discoverControllers();
-
     this.#teardownFunction = editor.lexicalEditor.registerUpdateListener(() => {
       this.reflectEditorState();
     });
 
     this.reflectEditorState();
-  }
-
-  /**
-   * Discover [data-lexis-controller] popovers and mount their controllers
-   * @private
-   */
-  #discoverControllers() {
-    for (const el of this.querySelectorAll("[data-lexis-controller]")) {
-      const controllerId = el.dataset.lexisController;
-      const ControllerClass = ControllerRegistry.get(controllerId);
-
-      if (!ControllerClass) {
-        console.error(`[Toolbar] Unknown controller: "${controllerId}"`);
-        return;
-      }
-
-      try {
-        const controller = new ControllerClass(el);
-        controller.mount(this.#editor);
-      } catch (error) {
-        console.error(
-          `[Toolbar] Failed to mount controller "${controllerId}":`,
-          error,
-        );
-      }
-    }
   }
 
   dispatchCommandEvent = (evt) => {
