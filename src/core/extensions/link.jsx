@@ -1,4 +1,4 @@
-import { defineExtension } from "lexical";
+import { ListenerRegistry, registerEventListener } from "../../helper/listener";
 import { $getLinkNode } from "../commands/link";
 import { LexisExtension } from "./extension";
 
@@ -10,6 +10,9 @@ export class LinkExtension extends LexisExtension {
 
   /** @type {HTMLElement} */
   #popoverEl = null;
+
+  /** @type {import('../../helper/listener').ListenerRegistry} */
+  #listeners = new ListenerRegistry();
 
   /**
    * @param {import('../../elements').LexisToolbarElement} toolbarEl
@@ -24,6 +27,14 @@ export class LinkExtension extends LexisExtension {
     this.#attachEventListeners();
 
     return this.element;
+  }
+
+  dispose() {
+    this.#listeners.cleanup();
+
+    this.#popoverEl = null;
+    this.#urlInput = null;
+    this.element = null;
   }
 
   #buildPopover() {
@@ -81,33 +92,39 @@ export class LinkExtension extends LexisExtension {
    * @private
    */
   #attachEventListeners() {
-    this.element.addEventListener("editor:command", (evt) => {
-      const { command } = evt.detail;
+    this.#listeners.track(
+      registerEventListener(this.element, "editor:command", (evt) => {
+        const { command } = evt.detail;
 
-      if (!["link", "unlink"].includes(command)) {
-        return;
-      }
+        if (!["link", "unlink"].includes(command)) {
+          return;
+        }
 
-      evt.stopPropagation();
-      command === "link" ? this.#insertLink() : this.#removeLink();
-    });
+        evt.stopPropagation();
+        command === "link" ? this.#insertLink() : this.#removeLink();
+      }),
+    );
 
-    this.#urlInput.addEventListener("change", () => this.#insertLink());
+    this.#listeners.track(
+      registerEventListener(this.#urlInput, "change", () => this.#insertLink()),
+    );
 
-    this.#popoverEl.addEventListener("toggle", (evt) => {
-      if (evt.newState === "open" && this.editor.isActive("link")) {
-        this.editor.lexicalEditor.read(() => {
-          const linkNode = $getLinkNode();
-          if (linkNode) {
-            this.#urlInput.value = linkNode.getURL();
-          }
-        });
+    this.#listeners.track(
+      registerEventListener(this.#popoverEl, "toggle", (evt) => {
+        if (evt.newState === "open" && this.editor.isActive("link")) {
+          this.editor.lexicalEditor.read(() => {
+            const linkNode = $getLinkNode();
+            if (linkNode) {
+              this.#urlInput.value = linkNode.getURL();
+            }
+          });
 
-        return;
-      }
+          return;
+        }
 
-      this.#urlInput.value = "";
-    });
+        this.#urlInput.value = "";
+      }),
+    );
   }
 
   /**

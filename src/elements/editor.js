@@ -1,6 +1,7 @@
 import { commands } from "../core/commands";
 import { Editor } from "../core/editor";
 import { createElement } from "../helper";
+import { ListenerRegistry, registerEventListener } from "../helper/listener";
 import { LexisToolbarElement } from "./toolbar";
 
 export class LexisEditorElement extends HTMLElement {
@@ -16,6 +17,9 @@ export class LexisEditorElement extends HTMLElement {
   /** @type {String} */
   #lastValue = "";
 
+  /** @type {import('../helper/listener').ListenerRegistry} */
+  #listeners = new ListenerRegistry();
+
   /**
    * @type {import('./toolbar').LexisToolbarElement}
    */
@@ -26,19 +30,30 @@ export class LexisEditorElement extends HTMLElement {
 
   constructor() {
     super();
+
     this.#setupInternals();
-    this.#setupContentRoot();
-    this.#setupEditor();
   }
 
   connectedCallback() {
-    this.tabIndex = -1;
+    this.#setupContentRoot();
+    this.#setupEditor();
 
     this.#setupBlurListener();
     this.#setupEditorUpdateListener();
     this.#validate();
 
     this.#attachToolbar();
+
+    this.tabIndex = -1;
+  }
+
+  disconnectedCallback() {
+    this.#listeners.cleanup();
+    this.editor.destroy();
+
+    this.$rootEl = null;
+    this.toolbar = null;
+    this.#editorInstance = null;
   }
 
   attributeChangedCallback(name) {
@@ -145,12 +160,14 @@ export class LexisEditorElement extends HTMLElement {
    * @private
    */
   #setupBlurListener() {
-    this.$rootEl.addEventListener("blur", () => {
-      if (this.#lastValue !== this.value) {
-        this.#lastValue = this.value;
-        this.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    });
+    this.#listeners.track(
+      registerEventListener(this.$rootEl, "blur", () => {
+        if (this.#lastValue !== this.value) {
+          this.#lastValue = this.value;
+          this.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }),
+    );
   }
 
   /**
@@ -158,21 +175,23 @@ export class LexisEditorElement extends HTMLElement {
    * @private
    */
   #setupEditorUpdateListener() {
-    this.#editorInstance.lexicalEditor.registerUpdateListener(() => {
-      const contentValue = this.value;
+    this.#listeners.track(
+      this.#editorInstance.lexicalEditor.registerUpdateListener(() => {
+        const contentValue = this.value;
 
-      this.dispatchEvent(
-        new CustomEvent("editor:change", {
-          detail: { value: contentValue },
-          bubbles: true,
-        }),
-      );
+        this.dispatchEvent(
+          new CustomEvent("editor:change", {
+            detail: { value: contentValue },
+            bubbles: true,
+          }),
+        );
 
-      this.#innerTextArea.value = this.#editorInstance.textValue;
-      this.#internals.setFormValue(contentValue);
+        this.#innerTextArea.value = this.#editorInstance.textValue;
+        this.#internals.setFormValue(contentValue);
 
-      this.#validate();
-    });
+        this.#validate();
+      }),
+    );
   }
 
   /**

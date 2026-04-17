@@ -29,8 +29,6 @@ export class ClipboardExtension extends LexisExtension {
 
   /** @param {ClipboardEvent} evt  */
   #handlePaste = (evt) => {
-    console.log(evt.clipboardData.types);
-
     if (
       evt.clipboardData.types.some((type) =>
         ["Files", "text/html"].includes(type),

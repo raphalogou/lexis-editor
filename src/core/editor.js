@@ -4,6 +4,7 @@ import { $generateHtmlFromNodes } from "@lexical/html";
 import { $convertToMarkdownString } from "@lexical/markdown";
 import DOMPurify from "dompurify";
 import { $getRoot, defineExtension } from "lexical";
+import { ListenerRegistry } from "../helper/listener";
 import { ClipboardExtension } from "./extensions/clipboard";
 import { LexisExtension } from "./extensions/extension";
 import { LinkExtension } from "./extensions/link";
@@ -29,6 +30,8 @@ export class Editor {
 
   #extensions = new Map();
 
+  #listeners = new ListenerRegistry();
+
   /**
    * @param {HTMLElement} rootEl
    */
@@ -51,6 +54,19 @@ export class Editor {
 
     this.#registerExtensions();
     this.#buildLexicalEditor(rootEl);
+  }
+
+  destroy() {
+    for (const ext of this.enabledExtensions) {
+      ext.dispose();
+    }
+
+    this.#listeners.cleanup();
+    this.lexicalEditor.dispose();
+
+    this.#extensions.clear();
+    this.#commands = null;
+    this.lexicalEditor = null;
   }
 
   /**

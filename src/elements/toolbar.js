@@ -1,3 +1,4 @@
+import { ListenerRegistry, registerEventListener } from "../helper/listener";
 import "./popover";
 
 export class LexisToolbarElement extends HTMLElement {
@@ -6,9 +7,10 @@ export class LexisToolbarElement extends HTMLElement {
    */
   #editor = null;
 
-  #teardownFunction = null;
-
   #buttonMap = new Map();
+
+  /** @type {import('../helper/listener').ListenerRegistry} */
+  #listeners = new ListenerRegistry();
 
   connectedCallback() {
     // Register command controls
@@ -17,18 +19,14 @@ export class LexisToolbarElement extends HTMLElement {
       this.#buttonMap.set(btn.dataset.command, btn);
     }
 
-    this.addEventListener("click", this.dispatchCommandEvent);
-    this.addEventListener("editor:command", this.handleEditorCommand);
+    this.#listeners.track(
+      registerEventListener(this, "click", this.dispatchCommandEvent),
+      registerEventListener(this, "editor:command", this.handleEditorCommand),
+    );
   }
 
   disconnectedCallback() {
-    this.removeEventListener("click", this.dispatchCommandEvent);
-    this.removeEventListener("editor:command", this.handleEditorCommand);
-    this.#teardownFunction?.();
-
-    this.#buttonMap.forEach((btn) => {
-      btn.removeEventListener("click", this.dispatchCommandEvent);
-    });
+    this.#listeners.cleanup();
     this.#buttonMap.clear();
   }
 
@@ -38,9 +36,11 @@ export class LexisToolbarElement extends HTMLElement {
   attachEditor(editor) {
     this.#editor = editor;
 
-    this.#teardownFunction = editor.lexicalEditor.registerUpdateListener(() => {
-      this.reflectEditorState();
-    });
+    this.#listeners.track(
+      editor.lexicalEditor.registerUpdateListener(() => {
+        this.reflectEditorState();
+      }),
+    );
 
     this.reflectEditorState();
   }

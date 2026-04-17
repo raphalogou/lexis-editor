@@ -41,4 +41,6 @@ export class LexisExtension {
   render(toolbarEl) {
     return null;
   }
+
+  dispose() {}
 }
