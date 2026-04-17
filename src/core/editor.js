@@ -2,9 +2,9 @@ import { buildEditorFromExtensions } from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
 import { $generateHtmlFromNodes } from "@lexical/html";
 import { $convertToMarkdownString } from "@lexical/markdown";
-import DOMPurify from "dompurify";
 import { $getRoot, defineExtension } from "lexical";
 import { ListenerRegistry } from "../helper/listener";
+import { sanitizeHtml } from "../helper/sanitizer";
 import { ClipboardExtension } from "./extensions/clipboard";
 import { LexisExtension } from "./extensions/extension";
 import { LinkExtension } from "./extensions/link";
@@ -92,7 +92,7 @@ export class Editor {
     this.#cache.value = this.lexicalEditor.read(() =>
       this.supportsMarkdown
         ? $convertToMarkdownString(MARKDOWN_TRANSFORMERS, $getRoot())
-        : DOMPurify.sanitize($generateHtmlFromNodes(this.lexicalEditor)),
+        : sanitizeHtml($generateHtmlFromNodes(this.lexicalEditor)),
     );
     this.#isCacheDirty = false;
 

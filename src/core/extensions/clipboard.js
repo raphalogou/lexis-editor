@@ -1,5 +1,4 @@
 import { $generateNodesFromDOM } from "@lexical/html";
-import DOMPurify from "dompurify";
 import {
   $getRoot,
   $getSelection,
@@ -9,6 +8,8 @@ import {
   PASTE_TAG,
 } from "lexical";
 import { marked } from "marked";
+import { sanitizeHtml } from "../../helper/sanitizer";
+import { logger } from "../logger";
 import { LexisExtension } from "./extension";
 
 export class ClipboardExtension extends LexisExtension {
@@ -40,18 +41,35 @@ export class ClipboardExtension extends LexisExtension {
     evt.preventDefault();
     const lexicalEditor = this.editor.lexicalEditor;
 
-    const pastedText = evt.clipboardData.getData("text");
-    lexicalEditor.update(
-      () => {
-        const parsed = DOMPurify.sanitize(marked.parse(pastedText));
-        const dom = new DOMParser().parseFromString(parsed, "text/html");
+    try {
+      const pastedText = evt.clipboardData.getData("text");
+      lexicalEditor.update(
+        () => {
+          try {
+            const htmlText = marked.parse(pastedText);
+            const sanitized = sanitizeHtml(htmlText);
+            const htmlDocument = new DOMParser().parseFromString(
+              sanitized,
+              "text/html",
+            );
 
-        const lexicalNodes = $generateNodesFromDOM(lexicalEditor, dom);
+            const lexicalNodes = $generateNodesFromDOM(
+              lexicalEditor,
+              htmlDocument,
+            );
 
-        ($getSelection() ?? $getRoot().selectEnd()).insertNodes(lexicalNodes);
-      },
-      { tag: PASTE_TAG },
-    );
+            ($getSelection() ?? $getRoot().selectEnd()).insertNodes(
+              lexicalNodes,
+            );
+          } catch (error) {
+            logger.debug("Error processing pasted content:", error);
+          }
+        },
+        { tag: PASTE_TAG },
+      );
+    } catch (error) {
+      logger.debug("Error handling paste event:", error);
+    }
 
     return true;
   };

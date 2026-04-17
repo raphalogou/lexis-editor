@@ -1,5 +1,7 @@
 import { ListenerRegistry, registerEventListener } from "../../helper/listener";
+import { validateUrl } from "../../helper/sanitizer";
 import { $getLinkNode } from "../commands/link";
+import { logger } from "../logger";
 import { LexisExtension } from "./extension";
 
 export class LinkExtension extends LexisExtension {
@@ -138,6 +140,14 @@ export class LinkExtension extends LexisExtension {
 
     if (!url || !this.#urlInput.checkValidity()) {
       this.#urlInput.reportValidity();
+      return;
+    }
+
+    // Validate URL format and protocol
+    if (!validateUrl(url)) {
+      this.#urlInput.setCustomValidity("Invalid URL format or protocol");
+      this.#urlInput.reportValidity();
+      logger.debug(`Invalid URL provided: ${url}`);
       return;
     }
 
