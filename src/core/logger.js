@@ -8,7 +8,7 @@ export class Logger {
    * @param {boolean} [debug]
    */
   constructor(debug) {
-    this.debugEnabled = debug ?? import.meta.env.VITE_DEBUG === "1";
+    this.debugEnabled = debug ?? import.meta.env.DEV;
   }
 
   /**

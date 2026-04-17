@@ -17,6 +17,9 @@ export class LexisEditorElement extends HTMLElement {
   /** @type {String} */
   #lastValue = "";
 
+  /** @type {Boolean} */
+  #isFocused = false;
+
   /** @type {import('../helper/listener').ListenerRegistry} */
   #listeners = new ListenerRegistry();
 
@@ -38,7 +41,7 @@ export class LexisEditorElement extends HTMLElement {
     this.#setupContentRoot();
     this.#setupEditor();
 
-    this.#setupBlurListener();
+    this.#setupListeners();
     this.#setupEditorUpdateListener();
     this.#validate();
 
@@ -128,7 +131,7 @@ export class LexisEditorElement extends HTMLElement {
       control && this.toolbar.append(control);
     }
 
-    this.toolbar.attachEditor(this.editor);
+    this.toolbar.attachEditor(this);
   }
 
   /**
@@ -157,18 +160,40 @@ export class LexisEditorElement extends HTMLElement {
   }
 
   /**
-   * Setup blur event listener for change detection
+   * Setup event listeners
    * @private
    */
-  #setupBlurListener() {
+  #setupListeners() {
     this.#listeners.track(
-      registerEventListener(this.$rootEl, "blur", () => {
-        if (this.#lastValue !== this.value) {
-          this.#lastValue = this.value;
-          this.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-      }),
+      registerEventListener(this, "focusin", this.#handleFocusIn),
     );
+    this.#listeners.track(
+      registerEventListener(this, "focusout", this.#handleFocusOut),
+    );
+  }
+
+  #handleFocusIn = () => {
+    if (this.#isFocused) return;
+
+    this.#isFocused = true;
+    this.#lastValue = this.editor.value;
+    this.dispatchEvent(new CustomEvent("editor:focus", { bubbles: true }));
+  };
+
+  #handleFocusOut = (e) => {
+    if (this.contains(e.relatedTarget)) return;
+
+    this.#isFocused = false;
+
+    if (this.editor.value !== this.#lastValue) {
+      this.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    this.dispatchEvent(new CustomEvent("editor:blur", { bubbles: true }));
+  };
+
+  get hasFocus() {
+    return this.#isFocused;
   }
 
   /**
@@ -177,21 +202,25 @@ export class LexisEditorElement extends HTMLElement {
    */
   #setupEditorUpdateListener() {
     this.#listeners.track(
-      this.#editorInstance.lexicalEditor.registerUpdateListener(() => {
-        const contentValue = this.value;
+      this.#editorInstance.lexicalEditor.registerUpdateListener(
+        ({ dirtyElements, dirtyLeaves }) => {
+          // Ignore selection-only changes — those aren't content changes
+          if (dirtyElements.size === 0 && dirtyLeaves.size === 0) return;
 
-        this.dispatchEvent(
-          new CustomEvent("editor:change", {
-            detail: { value: contentValue },
-            bubbles: true,
-          }),
-        );
+          const value = this.editor.value;
+          this.#internals.setFormValue(value);
+          this.#innerTextArea.value = value;
 
-        this.#innerTextArea.value = this.#editorInstance.textValue;
-        this.#internals.setFormValue(contentValue);
+          this.#validate();
 
-        this.#validate();
-      }),
+          this.dispatchEvent(
+            new CustomEvent("editor:change", {
+              bubbles: true,
+              detail: { value },
+            }),
+          );
+        },
+      ),
     );
   }
 

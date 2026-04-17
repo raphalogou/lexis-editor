@@ -33,11 +33,6 @@ export class Editor {
 
   #listeners = new ListenerRegistry();
 
-  /**
-   * @param {HTMLElement} rootEl
-   */
-  #rootEl = null;
-
   /** @type {import('lexical').LexicalEditor} */
   lexicalEditor = null;
 
@@ -206,8 +201,6 @@ export class Editor {
 
           const extOutput = state.getDependency(HistoryExtension);
           this.historyState = extOutput.output.historyState.peek();
-
-          this.#rootEl = rootEl;
         },
       }),
       ...this.enabledExtensions

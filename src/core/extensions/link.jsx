@@ -45,6 +45,7 @@ export class LinkExtension extends LexisExtension {
           class="lexis-button"
           command="toggle-popover"
           commandfor="link-popover"
+          data-lexis-control="link"
         >
           Link
         </button>

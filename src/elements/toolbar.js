@@ -10,6 +10,8 @@ export class LexisToolbarElement extends HTMLElement {
 
   #buttonMap = new Map();
 
+  #buttonStateCache = new Map();
+
   /** @type {import('../helper/listener').ListenerRegistry} */
   #listeners = new ListenerRegistry();
 
@@ -29,21 +31,45 @@ export class LexisToolbarElement extends HTMLElement {
   disconnectedCallback() {
     this.#listeners.cleanup();
     this.#buttonMap.clear();
+    this.#buttonStateCache.clear();
   }
 
   /**
-   * @param {import('../core/editor').Editor} editor
+   * @param {import('./editor').LexisEditorElement} editorEl
    */
-  attachEditor(editor) {
-    this.#editor = editor;
+  attachEditor(editorEl) {
+    this.#editor = editorEl.editor;
+
+    for (const control of this.querySelectorAll("[data-lexis-control]")) {
+      const commandId = control.dataset.lexisControl;
+      this.#buttonMap.set(commandId, control);
+    }
 
     this.#listeners.track(
-      editor.lexicalEditor.registerUpdateListener(() => {
-        this.reflectEditorState();
+      registerEventListener(editorEl, "editor:focus", () =>
+        this.reflectEditorState(),
+      ),
+      registerEventListener(editorEl, "editor:blur", () =>
+        this.#clearActiveStates(),
+      ),
+    );
+
+    this.#listeners.track(
+      this.#editor.lexicalEditor.registerUpdateListener(() => {
+        editorEl.hasFocus && this.reflectEditorState();
       }),
     );
 
     this.reflectEditorState();
+  }
+
+  /**
+   * Register a control element for a command
+   * @param {string} commandId
+   * @param {HTMLElement} element
+   */
+  registerControl(commandId, element) {
+    this.#buttonMap.set(commandId, element);
   }
 
   dispatchCommandEvent = (evt) => {
@@ -71,13 +97,38 @@ export class LexisToolbarElement extends HTMLElement {
 
   reflectEditorState() {
     this.#buttonMap.forEach((btn, cmd) => {
-      if (this.#editor.isActive(cmd)) {
-        btn.setAttribute("data-state", "active");
-      } else {
-        btn.removeAttribute("data-state");
-      }
+      const isActive = this.#editor.isActive(cmd);
+      const isDisabled = this.#editor.isDisabled(cmd);
+      const cachedState = this.#buttonStateCache.get(cmd);
 
-      btn.disabled = this.#editor.isDisabled(cmd);
+      // Only update if state has changed
+      if (
+        !cachedState ||
+        cachedState.active !== isActive ||
+        cachedState.disabled !== isDisabled
+      ) {
+        if (isActive) {
+          btn.setAttribute("data-state", "active");
+        } else {
+          btn.removeAttribute("data-state");
+        }
+
+        btn.disabled = isDisabled;
+
+        // Cache the new state
+        this.#buttonStateCache.set(cmd, {
+          active: isActive,
+          disabled: isDisabled,
+        });
+      }
     });
+  }
+
+  #clearActiveStates() {
+    this.#buttonMap.forEach((btn) => {
+      btn.removeAttribute("data-state");
+    });
+
+    this.#buttonStateCache.clear();
   }
 }
