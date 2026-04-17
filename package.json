@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "biome lint src/",
+    "format": "biome format src/",
+    "build:check": "biome check src/"
   },
   "dependencies": {
     "@lexical/extension": "^0.42.0",

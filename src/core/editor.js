@@ -13,6 +13,7 @@ import {
   MarkdownExtension,
 } from "./extensions/markdown";
 import { RichTextExtension } from "./extensions/rich-text";
+import { logger } from "./logger";
 
 /**
  * @typedef {Object} EditorCommand
@@ -222,7 +223,7 @@ export class Editor {
     ]) {
       const extension = new ExtensionClass(this);
       if (!(extension instanceof LexisExtension)) {
-        console.error("[Editor] Extensions should extend LexisExtension class");
+        logger.error("Extensions should extend LexisExtension class");
         continue;
       }
 

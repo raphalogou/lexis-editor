@@ -1,3 +1,4 @@
+import { logger } from "../core/logger";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
 import "./popover";
 
@@ -59,7 +60,7 @@ export class LexisToolbarElement extends HTMLElement {
 
   handleEditorCommand = (evt) => {
     if (!this.#editor) {
-      console.error(
+      logger.error(
         "No editor has been attached to this toolbar. Did you forget to map it to the editor through the `toolbar` attribute?",
       );
       return;

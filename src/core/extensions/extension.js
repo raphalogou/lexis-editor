@@ -35,10 +35,10 @@ export class LexisExtension {
   }
 
   /**
-   * @param {import('../../elements').LexisToolbarElement} toolbarEl
+   * @param {import('../../elements').LexisToolbarElement} _toolbarEl
    * @returns {HTMLElement|null}
    */
-  render(toolbarEl) {
+  render(_toolbarEl) {
     return null;
   }
 

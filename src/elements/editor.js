@@ -122,12 +122,13 @@ export class LexisEditorElement extends HTMLElement {
 
   #attachToolbar() {
     this.toolbar = this.#getToolbar() ?? this.#buildToolbar();
-    this.toolbar.attachEditor(this.editor);
 
     for (const ext of this.editor.enabledExtensions) {
       const control = ext.render(this.toolbar);
       control && this.toolbar.append(control);
     }
+
+    this.toolbar.attachEditor(this.editor);
   }
 
   /**
