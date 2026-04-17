@@ -33,6 +33,13 @@ export class Editor {
 
   #listeners = new ListenerRegistry();
 
+  #cache = {
+    value: null,
+    textValue: null,
+  };
+
+  #isCacheDirty = true;
+
   /** @type {import('lexical').LexicalEditor} */
   lexicalEditor = null;
 
@@ -63,6 +70,7 @@ export class Editor {
     this.#extensions.clear();
     this.#commands = null;
     this.lexicalEditor = null;
+    this.#cache = { value: null, textValue: null };
   }
 
   /**
@@ -77,15 +85,31 @@ export class Editor {
   }
 
   get value() {
-    return this.lexicalEditor.read(() =>
+    if (!this.#isCacheDirty && this.#cache.value !== null) {
+      return this.#cache.value;
+    }
+
+    this.#cache.value = this.lexicalEditor.read(() =>
       this.supportsMarkdown
         ? $convertToMarkdownString(MARKDOWN_TRANSFORMERS, $getRoot())
         : DOMPurify.sanitize($generateHtmlFromNodes(this.lexicalEditor)),
     );
+    this.#isCacheDirty = false;
+
+    return this.#cache.value;
   }
 
   get textValue() {
-    return this.lexicalEditor.read(() => $getRoot().getTextContent());
+    if (!this.#isCacheDirty && this.#cache.textValue !== null) {
+      return this.#cache.textValue;
+    }
+
+    this.#cache.textValue = this.lexicalEditor.read(() =>
+      $getRoot().getTextContent(),
+    );
+    this.#isCacheDirty = false;
+
+    return this.#cache.textValue;
   }
 
   get isEmpty() {
@@ -174,6 +198,14 @@ export class Editor {
     return this.lexicalEditor.read(() => cmd.isDisabled(this));
   }
 
+  /**
+   * Invalidate cached values when editor content changes
+   * @private
+   */
+  #invalidateValueCache() {
+    this.#isCacheDirty = true;
+  }
+
   #buildLexicalEditor(rootEl) {
     this.lexicalEditor = buildEditorFromExtensions(
       defineExtension({
@@ -201,6 +233,16 @@ export class Editor {
 
           const extOutput = state.getDependency(HistoryExtension);
           this.historyState = extOutput.output.historyState.peek();
+
+          this.#listeners.track(
+            lexicalEditor.registerUpdateListener(
+              ({ dirtyElements, dirtyLeaves }) => {
+                if (dirtyElements.size > 0 || dirtyLeaves.size > 0) {
+                  this.#invalidateValueCache();
+                }
+              },
+            ),
+          );
         },
       }),
       ...this.enabledExtensions

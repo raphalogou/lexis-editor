@@ -1,6 +1,6 @@
 import { commands } from "../core/commands";
 import { Editor } from "../core/editor";
-import { createElement } from "../helper";
+import { createElement } from "../helper/jsx-runtime";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
 import { LexisToolbarElement } from "./toolbar";
 
@@ -99,15 +99,11 @@ export class LexisEditorElement extends HTMLElement {
    * @private
    */
   #setupContentRoot() {
-    this.$rootEl = createElement(
-      "div",
-      {
-        class: "lexis-content",
-        "data-slot": "editor-content",
-        contentEditable: true,
-      },
-      {},
-    );
+    this.$rootEl = createElement("div", {
+      class: "lexis-content",
+      "data-slot": "editor-content",
+      contentEditable: true,
+    });
     this.append(this.$rootEl);
   }
 
