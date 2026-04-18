@@ -2,6 +2,86 @@
 @import "sanitize.css/forms.css";
 @import "sanitize.css/typography.css";
 
+:root,
+.code-block,
+.code-block[data-theme="one-light"] {
+  --lexis-inline-code-bg: #f3f4f7;
+  --lexis-inline-code-fg: #383a42;
+  --lexis-code-bg: #f3f4f7;
+  --lexis-code-fg: #383a42;
+  --lexis-code-border: #d7dae2;
+
+  --lexis-token-atrule: #a626a4;
+  --lexis-token-attr: #986801;
+  --lexis-token-boolean: #0184bc;
+  --lexis-token-builtin: #e45649;
+  --lexis-token-cdata: #a0a1a7;
+  --lexis-token-char: #50a14f;
+  --lexis-token-class: #c18401;
+  --lexis-token-class-name: #c18401;
+  --lexis-token-comment: #a0a1a7;
+  --lexis-token-constant: #986801;
+  --lexis-token-deleted: #e45649;
+  --lexis-token-doctype: #a0a1a7;
+  --lexis-token-entity: #4078f2;
+  --lexis-token-function: #4078f2;
+  --lexis-token-important: #c18401;
+  --lexis-token-inserted: #50a14f;
+  --lexis-token-keyword: #a626a4;
+  --lexis-token-namespace: #986801;
+  --lexis-token-number: #986801;
+  --lexis-token-operator: #383a42;
+  --lexis-token-prolog: #a0a1a7;
+  --lexis-token-property: #986801;
+  --lexis-token-punctuation: #383a42;
+  --lexis-token-regex: #50a14f;
+  --lexis-token-selector: #e45649;
+  --lexis-token-string: #50a14f;
+  --lexis-token-symbol: #986801;
+  --lexis-token-tag: #e45649;
+  --lexis-token-url: #0184bc;
+  --lexis-token-variable: #e06c75;
+}
+
+.code-block[data-theme="one-dark"] {
+  --lexis-inline-code-bg: #282c34;
+  --lexis-inline-code-fg: #abb2bf;
+  --lexis-code-bg: #282c34;
+  --lexis-code-fg: #abb2bf;
+  --lexis-code-border: #3e4451;
+
+  --lexis-token-atrule: #c678dd;
+  --lexis-token-attr: #d19a66;
+  --lexis-token-boolean: #d19a66;
+  --lexis-token-builtin: #e06c75;
+  --lexis-token-cdata: #5c6370;
+  --lexis-token-char: #98c379;
+  --lexis-token-class: #e5c07b;
+  --lexis-token-class-name: #e5c07b;
+  --lexis-token-comment: #5c6370;
+  --lexis-token-constant: #d19a66;
+  --lexis-token-deleted: #e06c75;
+  --lexis-token-doctype: #5c6370;
+  --lexis-token-entity: #61afef;
+  --lexis-token-function: #61afef;
+  --lexis-token-important: #e5c07b;
+  --lexis-token-inserted: #98c379;
+  --lexis-token-keyword: #c678dd;
+  --lexis-token-namespace: #d19a66;
+  --lexis-token-number: #d19a66;
+  --lexis-token-operator: #56b6c2;
+  --lexis-token-prolog: #5c6370;
+  --lexis-token-property: #d19a66;
+  --lexis-token-punctuation: #abb2bf;
+  --lexis-token-regex: #98c379;
+  --lexis-token-selector: #e06c75;
+  --lexis-token-string: #98c379;
+  --lexis-token-symbol: #d19a66;
+  --lexis-token-tag: #e06c75;
+  --lexis-token-url: #56b6c2;
+  --lexis-token-variable: #e06c75;
+}
+
 .container {
   width: 100%;
   max-width: min(90vw, 1080px);
@@ -92,19 +172,143 @@ lexis-toolbar,
 
   .inline-code,
   .code-block {
-    background: #f1f1f1;
+    background: var(--lexis-inline-code-bg);
+    color: var(--lexis-inline-code-fg);
     font-size: 94%;
     padding: 2px 0.25rem;
     border-radius: 6px;
   }
 
   .code-block {
+    background: var(--lexis-code-bg);
+    color: var(--lexis-code-fg);
+    border: 1px solid var(--lexis-code-border);
     padding: 1ch;
     display: block;
     tab-size: 2;
     white-space: pre;
     word-break: break-word;
     margin-block: 0 1em;
+  }
+
+  .editor-token-atrule {
+    color: var(--lexis-token-atrule);
+  }
+
+  .editor-token-attr {
+    color: var(--lexis-token-attr);
+  }
+
+  .editor-token-boolean {
+    color: var(--lexis-token-boolean);
+  }
+
+  .editor-token-builtin {
+    color: var(--lexis-token-builtin);
+  }
+
+  .editor-token-cdata {
+    color: var(--lexis-token-cdata);
+  }
+
+  .editor-token-char {
+    color: var(--lexis-token-char);
+  }
+
+  .editor-token-class {
+    color: var(--lexis-token-class);
+  }
+
+  .editor-token-class-name {
+    color: var(--lexis-token-class-name);
+  }
+
+  .editor-token-comment {
+    color: var(--lexis-token-comment);
+  }
+
+  .editor-token-constant {
+    color: var(--lexis-token-constant);
+  }
+
+  .editor-token-deleted {
+    color: var(--lexis-token-deleted);
+  }
+
+  .editor-token-doctype {
+    color: var(--lexis-token-doctype);
+  }
+
+  .editor-token-entity {
+    color: var(--lexis-token-entity);
+  }
+
+  .editor-token-function {
+    color: var(--lexis-token-function);
+  }
+
+  .editor-token-important {
+    color: var(--lexis-token-important);
+  }
+
+  .editor-token-inserted {
+    color: var(--lexis-token-inserted);
+  }
+
+  .editor-token-keyword {
+    color: var(--lexis-token-keyword);
+  }
+
+  .editor-token-namespace {
+    color: var(--lexis-token-namespace);
+  }
+
+  .editor-token-number {
+    color: var(--lexis-token-number);
+  }
+
+  .editor-token-operator {
+    color: var(--lexis-token-operator);
+  }
+
+  .editor-token-prolog {
+    color: var(--lexis-token-prolog);
+  }
+
+  .editor-token-property {
+    color: var(--lexis-token-property);
+  }
+
+  .editor-token-punctuation {
+    color: var(--lexis-token-punctuation);
+  }
+
+  .editor-token-regex {
+    color: var(--lexis-token-regex);
+  }
+
+  .editor-token-selector {
+    color: var(--lexis-token-selector);
+  }
+
+  .editor-token-string {
+    color: var(--lexis-token-string);
+  }
+
+  .editor-token-symbol {
+    color: var(--lexis-token-symbol);
+  }
+
+  .editor-token-tag {
+    color: var(--lexis-token-tag);
+  }
+
+  .editor-token-url {
+    color: var(--lexis-token-url);
+  }
+
+  .editor-token-variable {
+    color: var(--lexis-token-variable);
   }
 }
 

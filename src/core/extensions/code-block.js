@@ -1,4 +1,5 @@
 import { $createCodeNode, CodeHighlightNode, CodeNode } from "@lexical/code";
+import { registerCodeHighlighting } from "@lexical/code-prism";
 import { $getNearestNodeOfType } from "@lexical/utils";
 import {
   $createParagraphNode,
@@ -10,6 +11,7 @@ import {
   KEY_ARROW_DOWN_COMMAND,
   mergeRegister,
 } from "lexical";
+
 import { transformBlock } from "../utils";
 import { LexisExtension } from "./extension";
 
@@ -33,7 +35,7 @@ export class CodeBlockExtension extends LexisExtension {
                 transformBlock(lexicalEditor, $createParagraphNode);
               } else {
                 transformBlock(lexicalEditor, () => {
-                  return $createCodeNode();
+                  return $createCodeNode("javascript", "one-light");
                 });
               }
               return true;
@@ -79,6 +81,8 @@ export class CodeBlockExtension extends LexisExtension {
             },
             COMMAND_PRIORITY_EDITOR,
           ),
+
+          registerCodeHighlighting(lexicalEditor),
         );
       },
     });
