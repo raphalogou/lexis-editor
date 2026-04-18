@@ -25,6 +25,7 @@ import {
   mergeRegister,
 } from "lexical";
 import { ListenerRegistry, registerEventListener } from "../../helper/listener";
+import { COMMAND_ICONS } from "../commands/icons";
 import { logger } from "../logger";
 import { transformBlock } from "../utils";
 import { LexisExtension } from "./extension";
@@ -142,6 +143,7 @@ export class CodeBlockExtension extends LexisExtension {
       {
         id: "code-block",
         label: "Code Block",
+        icon: COMMAND_ICONS["code-block"],
         shortcut: null,
 
         isActive: () => {

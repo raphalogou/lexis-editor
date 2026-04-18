@@ -5,6 +5,7 @@ import {
 } from "@lexical/list";
 import { $getNearestNodeOfType } from "@lexical/utils";
 import { $getSelection, $isRangeSelection } from "lexical";
+import { COMMAND_ICONS } from "./icons";
 
 function $getListNodeType() {
   const selection = $getSelection();
@@ -24,6 +25,7 @@ export const commands = [
   {
     id: "bullet-list",
     label: "Unordered List",
+    icon: COMMAND_ICONS["bullet-list"],
 
     isActive() {
       return $getListNodeType() === "bullet";
@@ -36,6 +38,7 @@ export const commands = [
   {
     id: "number-list",
     label: "Ordered List",
+    icon: COMMAND_ICONS["number-list"],
 
     isActive() {
       return $getListNodeType() === "number";

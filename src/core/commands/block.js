@@ -15,6 +15,7 @@ import {
   ParagraphNode,
 } from "lexical";
 import { transformBlock } from "../utils";
+import { COMMAND_ICONS } from "./icons";
 
 export const TOGGLE_HEADING_COMMAND = createCommand("TOGGLE_HEADING_COMMAND");
 export const TOGGLE_QUOTE_COMMAND = createCommand("TOGGLE_QUOTE_COMMAND");
@@ -28,6 +29,7 @@ export const commands = [
   ...headingLevels.map((level) => ({
     id: `heading-${level}`,
     label: `Heading ${level}`,
+    icon: COMMAND_ICONS[`heading-${level}`],
 
     isActive() {
       return $isHeadingNode(level);
@@ -40,6 +42,7 @@ export const commands = [
   {
     id: "quote",
     label: "Quote",
+    icon: COMMAND_ICONS.quote,
 
     isActive() {
       return $isInsideQuote();
@@ -52,6 +55,7 @@ export const commands = [
   {
     id: "paragraph",
     label: "Normal",
+    icon: COMMAND_ICONS.paragraph,
 
     isActive() {
       const selection = $getSelection();

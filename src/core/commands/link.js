@@ -6,6 +6,7 @@ import {
   $getWordBoundaries,
   $selectWord,
 } from "../utils";
+import { COMMAND_ICONS } from "./icons";
 
 /** @returns {import('@lexical/link').LinkNode|null} */
 export function $getLinkNode() {
@@ -24,6 +25,7 @@ export const commands = [
   {
     id: "link",
     label: "Link",
+    icon: COMMAND_ICONS.link,
 
     isActive() {
       return $getLinkNode() !== null;
@@ -61,6 +63,7 @@ export const commands = [
   {
     id: "unlink",
     label: "Unlink",
+    icon: COMMAND_ICONS.unlink,
 
     execute(lexicalEditor) {
       lexicalEditor.dispatchCommand(TOGGLE_LINK_COMMAND, null);

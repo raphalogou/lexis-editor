@@ -102,13 +102,21 @@ export class ToolbarTemplateBuilder {
       };
     }
 
+    const icon = createToolbarIcon(command.icon, command.label);
+
     return {
       commandId,
       control: createElement("button", {
         type: "button",
-        class: "lexis-button",
+        class: icon ? "lexis-button lexis-button--icon" : "lexis-button",
         "data-command": commandId,
-        children: [command.label],
+        ...(icon
+          ? {
+              title: command.label,
+              "aria-label": command.label,
+            }
+          : {}),
+        children: [icon || command.label],
       }),
     };
   }
@@ -152,6 +160,43 @@ export class ToolbarTemplateBuilder {
       optionsByCommand,
     };
   }
+}
+
+function createToolbarIcon(icon, label) {
+  if (!icon) {
+    return null;
+  }
+
+  let svg = null;
+
+  if (typeof icon === "string") {
+    svg = parseSvgIcon(icon);
+  } else if (icon instanceof SVGElement) {
+    svg = icon.cloneNode(true);
+  }
+
+  if (!(svg instanceof SVGElement)) {
+    return null;
+  }
+
+  svg.setAttribute("data-slot", "toolbar-icon");
+  svg.setAttribute("aria-hidden", "true");
+  svg.removeAttribute("aria-label");
+  svg.removeAttribute("role");
+
+  return createElement("span", {
+    "data-slot": "toolbar-icon-wrapper",
+    title: label,
+    "aria-label": label,
+    children: [svg],
+  });
+}
+
+function parseSvgIcon(svgMarkup) {
+  const template = document.createElement("template");
+  template.innerHTML = svgMarkup.trim();
+  const firstElement = template.content.firstElementChild;
+  return firstElement instanceof SVGElement ? firstElement : null;
 }
 
 function parseToolbarTemplate(template = "") {

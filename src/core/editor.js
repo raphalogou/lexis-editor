@@ -29,6 +29,7 @@ import { logger } from "./logger";
  * @typedef {Object} EditorCommand
  * @property {string} id
  * @property {string} label
+ * @property {string} [icon]
  * @property {string} [shortcut]
  * @property {(editor: Editor) => boolean} [isActive]
  * @property {(editor: Editor) => boolean} [isDisabled]

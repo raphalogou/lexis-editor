@@ -4,6 +4,7 @@ import {
 } from "@lexical/extension";
 import { $getNearestNodeOfType } from "@lexical/utils";
 import { $getSelection, $isRangeSelection } from "lexical";
+import { COMMAND_ICONS } from "./icons";
 
 /**
  * @type {import('../editor').EditorCommand[]}
@@ -12,6 +13,7 @@ export const commands = [
   {
     id: "divider",
     label: "Divider",
+    icon: COMMAND_ICONS.divider,
     shortcut: null,
 
     isActive() {
