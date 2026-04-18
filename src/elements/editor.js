@@ -5,8 +5,26 @@ import { ListenerRegistry, registerEventListener } from "../helper/listener";
 import { LexisToolbarElement } from "./toolbar";
 
 export class LexisEditorElement extends HTMLElement {
+  /**
+   * @type {{
+   * markdown: boolean,
+   * extensions: Array<typeof import('../core/extensions/extension').LexisExtension>,
+   * extensionMode: 'append' | 'replace',
+   * lexical: { namespace?: string, theme?: Record<string, any> }
+   * }}
+   */
+  static defaultConfig = {
+    markdown: true,
+    extensions: [],
+    extensionMode: "append",
+    lexical: {},
+  };
+
   /** @type {import('../core/editor').Editor} */
   #editorInstance;
+
+  /** @type {Record<string, any>} */
+  #resolvedConfig = null;
 
   /** @type {ElementInternals} */
   #internals;
@@ -42,7 +60,8 @@ export class LexisEditorElement extends HTMLElement {
 
   connectedCallback() {
     this.#setupContentRoot();
-    this.#setupEditor();
+    this.#resolvedConfig = this.#resolveInitialConfig();
+    this.#setupEditor(this.#resolvedConfig);
 
     this.#setupListeners();
     this.#setupEditorUpdateListener();
@@ -53,6 +72,8 @@ export class LexisEditorElement extends HTMLElement {
     this.#defaultValue = this.getAttribute("value") ?? "";
     this.editor.value = this.#defaultValue;
     this.#syncPlaceholderState();
+
+    this.#dispatchEditorReady(this.#resolvedConfig);
 
     this.tabIndex = -1;
 
@@ -148,8 +169,8 @@ export class LexisEditorElement extends HTMLElement {
    * Initialize editor instance and register commands
    * @private
    */
-  #setupEditor() {
-    this.#editorInstance = new Editor(this.$rootEl);
+  #setupEditor(config) {
+    this.#editorInstance = new Editor(this.$rootEl, config);
     this.#editorInstance.attachHostElement(this);
 
     for (const cmd of commands) {
@@ -295,4 +316,114 @@ export class LexisEditorElement extends HTMLElement {
 
     this.$rootEl.dataset.empty = String(this.editor.isEmpty);
   }
+
+  #resolveInitialConfig() {
+    const draftConfig = {
+      ...LexisEditorElement.defaultConfig,
+      extensions: [...LexisEditorElement.defaultConfig.extensions],
+      lexical: { ...LexisEditorElement.defaultConfig.lexical },
+    };
+
+    if (this.hasAttribute("markdown")) {
+      draftConfig.markdown = this.getAttribute("markdown") !== "false";
+    }
+
+    let canConfigure = true;
+    const configure = (patch) => {
+      if (!canConfigure) {
+        return;
+      }
+
+      applyConfigPatch(draftConfig, patch);
+    };
+
+    this.dispatchEvent(
+      new CustomEvent("editor:initialize", {
+        bubbles: true,
+        composed: true,
+        detail: {
+          config: Object.freeze({
+            ...draftConfig,
+            extensions: [...draftConfig.extensions],
+            lexical: { ...(draftConfig.lexical || {}) },
+          }),
+          configure,
+          editorElement: this,
+        },
+      }),
+    );
+
+    canConfigure = false;
+
+    return normalizeEditorConfig(draftConfig);
+  }
+
+  #dispatchEditorReady(config) {
+    this.dispatchEvent(
+      new CustomEvent("editor:ready", {
+        bubbles: true,
+        composed: true,
+        detail: {
+          editor: this.#editorInstance,
+          config: Object.freeze({
+            ...config,
+            lexical: { ...(config.lexical || {}) },
+          }),
+        },
+      }),
+    );
+  }
+}
+
+function normalizeEditorConfig(input) {
+  return {
+    markdown: input.markdown === true,
+    extensions: Array.isArray(input.extensions) ? input.extensions : [],
+    extensionMode: input.extensionMode === "replace" ? "replace" : "append",
+    lexical:
+      input.lexical && typeof input.lexical === "object" ? input.lexical : {},
+  };
+}
+
+function applyConfigPatch(target, patch) {
+  if (!isPlainObject(patch)) {
+    return;
+  }
+
+  const { markdown, extensions, extensionMode, lexical } = patch;
+
+  if (markdown !== undefined) {
+    target.markdown = markdown === true;
+  }
+
+  if (Array.isArray(extensions)) {
+    target.extensions = [...extensions];
+  }
+
+  if (extensionMode !== undefined) {
+    target.extensionMode = extensionMode === "replace" ? "replace" : "append";
+  }
+
+  if (isPlainObject(lexical)) {
+    target.lexical = deepMergeObjects(target.lexical || {}, lexical);
+  }
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function deepMergeObjects(base, overrides) {
+  const output = { ...base };
+
+  for (const [key, value] of Object.entries(overrides)) {
+    if (isPlainObject(output[key]) && isPlainObject(value)) {
+      output[key] = deepMergeObjects(output[key], value);
+      continue;
+    }
+
+    output[key] = value;
+  }
+
+  return output;
 }

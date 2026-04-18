@@ -59,14 +59,65 @@ export class Editor {
   /** @type {import('../elements/editor').LexisEditorElement|null} */
   hostElement = null;
 
+  static defaultTheme = {
+    quote: "quote",
+    heading: {
+      h1: "h1",
+      h2: "h2",
+      h3: "h3",
+      h4: "h4",
+      h5: "h5",
+      h6: "h6",
+    },
+    text: {
+      bold: "font-bold",
+      italic: "italic",
+      underline: "underline",
+      code: "inline-code",
+    },
+    code: "code-block",
+    codeHighlight: {
+      atrule: "editor-token-atrule",
+      attr: "editor-token-attr",
+      boolean: "editor-token-boolean",
+      builtin: "editor-token-builtin",
+      cdata: "editor-token-cdata",
+      char: "editor-token-char",
+      class: "editor-token-class",
+      "class-name": "editor-token-class-name",
+      comment: "editor-token-comment",
+      constant: "editor-token-constant",
+      deleted: "editor-token-deleted",
+      doctype: "editor-token-doctype",
+      entity: "editor-token-entity",
+      function: "editor-token-function",
+      important: "editor-token-important",
+      inserted: "editor-token-inserted",
+      keyword: "editor-token-keyword",
+      namespace: "editor-token-namespace",
+      number: "editor-token-number",
+      operator: "editor-token-operator",
+      prolog: "editor-token-prolog",
+      property: "editor-token-property",
+      punctuation: "editor-token-punctuation",
+      regex: "editor-token-regex",
+      selector: "editor-token-selector",
+      string: "editor-token-string",
+      symbol: "editor-token-symbol",
+      tag: "editor-token-tag",
+      url: "editor-token-url",
+      variable: "editor-token-variable",
+    },
+  };
+
   /**
    * @param {HTMLElement} rootEl
    */
-  constructor(
-    rootEl,
-    config = { markdown: true, extensions: [], initialValue: null },
-  ) {
-    this.config = config;
+  constructor(rootEl, config = {}) {
+    this.config = {
+      markdown: true,
+      ...config,
+    };
 
     this.#registerExtensions();
     this.#buildLexicalEditor(rootEl);
@@ -109,7 +160,7 @@ export class Editor {
    * @returns {Boolean}
    */
   get supportsMarkdown() {
-    return this.config.markdown;
+    return this.config.markdown === true;
   }
 
   get commands() {
@@ -285,60 +336,17 @@ export class Editor {
   }
 
   #buildLexicalEditor(rootEl) {
+    const lexicalConfig = this.config.lexical || {};
+    const theme = deepMergeObjects(
+      Editor.defaultTheme,
+      lexicalConfig.theme || {},
+    );
+
     this.lexicalEditor = buildEditorFromExtensions(
       defineExtension({
         name: "[root]",
-        namespace: "@lexis/editor",
-        theme: {
-          quote: "quote",
-          heading: {
-            h1: "h1",
-            h2: "h2",
-            h3: "h3",
-            h4: "h4",
-            h5: "h5",
-            h6: "h6",
-          },
-          text: {
-            bold: "font-bold",
-            italic: "italic",
-            underline: "underline",
-            code: "inline-code",
-          },
-          code: "code-block",
-          codeHighlight: {
-            atrule: "editor-token-atrule",
-            attr: "editor-token-attr",
-            boolean: "editor-token-boolean",
-            builtin: "editor-token-builtin",
-            cdata: "editor-token-cdata",
-            char: "editor-token-char",
-            class: "editor-token-class",
-            "class-name": "editor-token-class-name",
-            comment: "editor-token-comment",
-            constant: "editor-token-constant",
-            deleted: "editor-token-deleted",
-            doctype: "editor-token-doctype",
-            entity: "editor-token-entity",
-            function: "editor-token-function",
-            important: "editor-token-important",
-            inserted: "editor-token-inserted",
-            keyword: "editor-token-keyword",
-            namespace: "editor-token-namespace",
-            number: "editor-token-number",
-            operator: "editor-token-operator",
-            prolog: "editor-token-prolog",
-            property: "editor-token-property",
-            punctuation: "editor-token-punctuation",
-            regex: "editor-token-regex",
-            selector: "editor-token-selector",
-            string: "editor-token-string",
-            symbol: "editor-token-symbol",
-            tag: "editor-token-tag",
-            url: "editor-token-url",
-            variable: "editor-token-variable",
-          },
-        },
+        namespace: lexicalConfig.namespace || "@lexis/editor",
+        theme,
 
         afterRegistration: (lexicalEditor, _, state) => {
           lexicalEditor.setRootElement(rootEl);
@@ -364,10 +372,13 @@ export class Editor {
   }
 
   #registerExtensions() {
-    for (const ExtensionClass of [
-      ...this.baseExtensions,
-      ...(this.config.extensions ?? []),
-    ]) {
+    const customExtensions = this.config.extensions ?? [];
+    const extensionClasses =
+      this.config.extensionMode === "replace"
+        ? customExtensions
+        : [...this.baseExtensions, ...customExtensions];
+
+    for (const ExtensionClass of extensionClasses) {
       const extension = new ExtensionClass(this);
       if (!(extension instanceof LexisExtension)) {
         logger.error("Extensions should extend LexisExtension class");
@@ -401,4 +412,23 @@ export class Editor {
   get enabledExtensions() {
     return this.extensions.filter((ext) => ext.enabled);
   }
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function deepMergeObjects(base, overrides) {
+  const output = { ...base };
+
+  for (const [key, value] of Object.entries(overrides)) {
+    if (isPlainObject(output[key]) && isPlainObject(value)) {
+      output[key] = deepMergeObjects(output[key], value);
+      continue;
+    }
+
+    output[key] = value;
+  }
+
+  return output;
 }
