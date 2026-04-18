@@ -1,7 +1,10 @@
 import { buildEditorFromExtensions } from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
-import { $generateHtmlFromNodes } from "@lexical/html";
-import { $convertToMarkdownString } from "@lexical/markdown";
+import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
+import {
+  $convertFromMarkdownString,
+  $convertToMarkdownString,
+} from "@lexical/markdown";
 import { $getRoot, defineExtension } from "lexical";
 import { ListenerRegistry } from "../helper/listener";
 import { sanitizeHtml } from "../helper/sanitizer";
@@ -97,6 +100,24 @@ export class Editor {
     this.#isCacheDirty = false;
 
     return this.#cache.value;
+  }
+
+  set value(value) {
+    this.lexicalEditor.update(() => {
+      const rootNode = $getRoot();
+      rootNode.clear();
+
+      if (this.supportsMarkdown) {
+        $convertFromMarkdownString(value, MARKDOWN_TRANSFORMERS, rootNode);
+      } else {
+        $generateNodesFromDOM(
+          this.lexicalEditor,
+          new DOMParser().parseFromString(value, "text/html"),
+        );
+      }
+    });
+
+    this.#invalidateValueCache();
   }
 
   get textValue() {

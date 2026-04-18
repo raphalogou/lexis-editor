@@ -15,6 +15,9 @@ export class LexisEditorElement extends HTMLElement {
   #innerTextArea = document.createElement("textarea");
 
   /** @type {String} */
+  #defaultValue = "";
+
+  /** @type {String} */
   #lastValue = "";
 
   /** @type {Boolean} */
@@ -47,15 +50,22 @@ export class LexisEditorElement extends HTMLElement {
 
     this.#attachToolbar();
 
+    this.#defaultValue = this.getAttribute("value") ?? "";
+    this.editor.value = this.#defaultValue;
+
     this.tabIndex = -1;
+
+    if (this.hasAttribute("autofocus")) {
+      queueMicrotask(() => this.editor.lexicalEditor.focus());
+    }
   }
 
   disconnectedCallback() {
     this.#listeners.cleanup();
     this.editor.destroy();
 
-    this.$rootEl = null;
     this.toolbar = null;
+    this.#defaultValue = null;
     this.#editorInstance = null;
   }
 
@@ -67,6 +77,17 @@ export class LexisEditorElement extends HTMLElement {
     }
   }
 
+  formResetCallback() {
+    this.editor.value = this.#defaultValue;
+    this.#internals.setFormValue(this.#defaultValue);
+
+    this.#validate();
+  }
+
+  formStateRestoreCallback(state) {
+    this.editor.value = state ?? this.#defaultValue;
+  }
+
   /**
    * @returns {import('../core/editor').Editor}
    */
@@ -76,6 +97,10 @@ export class LexisEditorElement extends HTMLElement {
 
   get value() {
     return this.editor.value;
+  }
+
+  set value(value) {
+    this.editor.value = value;
   }
 
   get form() {
