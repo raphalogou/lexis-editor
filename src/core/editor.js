@@ -5,7 +5,13 @@ import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
 } from "@lexical/markdown";
-import { $getRoot, defineExtension } from "lexical";
+import {
+  $getRoot,
+  $isLineBreakNode,
+  $isParagraphNode,
+  $isTextNode,
+  defineExtension,
+} from "lexical";
 import { ListenerRegistry } from "../helper/listener";
 import { sanitizeHtml } from "../helper/sanitizer";
 import { ClipboardExtension } from "./extensions/clipboard";
@@ -78,6 +84,10 @@ export class Editor {
    */
   attachHostElement(hostElement) {
     this.hostElement = hostElement;
+  }
+
+  selectEnd() {
+    this.lexicalEditor.update(() => $getRoot().selectEnd());
   }
 
   destroy() {
@@ -153,7 +163,35 @@ export class Editor {
   }
 
   get isEmpty() {
-    return this.textValue.length === 0;
+    return this.lexicalEditor.read(() => {
+      const root = $getRoot();
+      const children = root.getChildren();
+
+      if (children.length === 0) {
+        return true;
+      }
+
+      if (children.length > 1) {
+        return false;
+      }
+
+      const firstChild = children[0];
+      if (!$isParagraphNode(firstChild)) {
+        return false;
+      }
+
+      if (firstChild.getTextContent().trim().length > 0) {
+        return false;
+      }
+
+      return firstChild.getChildren().every((child) => {
+        if ($isLineBreakNode(child)) {
+          return true;
+        }
+
+        return $isTextNode(child) && child.getTextContent().trim().length === 0;
+      });
+    });
   }
 
   /** @param {EditorCommand} command */

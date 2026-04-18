@@ -137,6 +137,17 @@ lexis-toolbar,
   border: 1px slategray solid;
   border-radius: 6px;
   cursor: auto;
+  position: relative;
+
+  &[data-empty="true"]::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    top: 0.65em;
+    left: 1em;
+    color: #8b9099;
+    pointer-events: none;
+    user-select: none;
+  }
 }
 
 .lexis-content {

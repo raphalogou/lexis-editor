@@ -32,7 +32,7 @@ export class LexisEditorElement extends HTMLElement {
   toolbar = null;
 
   static formAssociated = true;
-  static observedAttributes = ["required"];
+  static observedAttributes = ["placeholder", "required"];
 
   constructor() {
     super();
@@ -52,6 +52,7 @@ export class LexisEditorElement extends HTMLElement {
 
     this.#defaultValue = this.getAttribute("value") ?? "";
     this.editor.value = this.#defaultValue;
+    this.#syncPlaceholderState();
 
     this.tabIndex = -1;
 
@@ -75,17 +76,25 @@ export class LexisEditorElement extends HTMLElement {
       this.#innerTextArea.required = isRequired;
       this.#internals.ariaRequired = isRequired;
     }
+
+    if (name === "placeholder") {
+      this.#syncPlaceholderText();
+      this.#syncPlaceholderState();
+    }
   }
 
   formResetCallback() {
     this.editor.value = this.#defaultValue;
     this.#internals.setFormValue(this.#defaultValue);
+    this.#syncPlaceholderState();
 
     this.#validate();
+    this.editor.selectEnd();
   }
 
   formStateRestoreCallback(state) {
     this.editor.value = state ?? this.#defaultValue;
+    this.#syncPlaceholderState();
   }
 
   /**
@@ -129,6 +138,9 @@ export class LexisEditorElement extends HTMLElement {
       "data-slot": "editor-content",
       contentEditable: true,
     });
+
+    this.#syncPlaceholderText();
+
     this.append(this.$rootEl);
   }
 
@@ -234,6 +246,7 @@ export class LexisEditorElement extends HTMLElement {
           this.#innerTextArea.value = value;
 
           this.#validate();
+          this.#syncPlaceholderState();
 
           this.dispatchEvent(
             new CustomEvent("editor:change", {
@@ -261,5 +274,25 @@ export class LexisEditorElement extends HTMLElement {
     }
 
     this.#internals.setValidity({});
+  }
+
+  #syncPlaceholderText() {
+    if (!this.$rootEl) return;
+
+    const placeholder = this.getAttribute("placeholder") ?? "";
+    this.$rootEl.dataset.placeholder = placeholder;
+
+    if (placeholder) {
+      this.#internals.ariaPlaceholder = placeholder;
+      return;
+    }
+
+    this.#internals.ariaPlaceholder = null;
+  }
+
+  #syncPlaceholderState() {
+    if (!this.$rootEl || !this.#editorInstance) return;
+
+    this.$rootEl.dataset.empty = String(this.editor.isEmpty);
   }
 }
