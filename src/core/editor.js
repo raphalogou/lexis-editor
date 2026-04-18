@@ -9,6 +9,7 @@ import { $getRoot, defineExtension } from "lexical";
 import { ListenerRegistry } from "../helper/listener";
 import { sanitizeHtml } from "../helper/sanitizer";
 import { ClipboardExtension } from "./extensions/clipboard";
+import { CodeBlockExtension } from "./extensions/code-block";
 import { LexisExtension } from "./extensions/extension";
 import { LinkExtension } from "./extensions/link";
 import {
@@ -60,6 +61,12 @@ export class Editor {
 
     this.#registerExtensions();
     this.#buildLexicalEditor(rootEl);
+
+    for (const ext of this.enabledExtensions) {
+      for (const cmd of ext.commands) {
+        this.registerCommand(cmd);
+      }
+    }
   }
 
   destroy() {
@@ -246,7 +253,9 @@ export class Editor {
             bold: "font-bold",
             italic: "italic",
             underline: "underline",
+            code: "inline-code",
           },
+          code: "code-block",
         },
 
         afterRegistration: (lexicalEditor, _, state) => {
@@ -292,6 +301,7 @@ export class Editor {
       RichTextExtension,
       LinkExtension,
       ClipboardExtension,
+      CodeBlockExtension,
       MarkdownExtension,
     ];
   }

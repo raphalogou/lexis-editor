@@ -1,4 +1,7 @@
-import { TabIndentationExtension } from "@lexical/extension";
+import {
+  HorizontalRuleExtension,
+  TabIndentationExtension,
+} from "@lexical/extension";
 import { HistoryExtension } from "@lexical/history";
 import { AutoLinkExtension, createLinkMatcherWithRegExp } from "@lexical/link";
 import { ListExtension } from "@lexical/list";
@@ -30,6 +33,7 @@ export class RichTextExtension extends LexisExtension {
       dependencies: [
         HistoryExtension,
         TabIndentationExtension,
+        HorizontalRuleExtension,
         ListExtension,
         configExtension(AutoLinkExtension, {
           matchers: [

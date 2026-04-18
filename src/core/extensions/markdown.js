@@ -1,6 +1,8 @@
 import {
   BOLD_STAR,
+  CODE,
   HEADING,
+  INLINE_CODE,
   ITALIC_UNDERSCORE,
   LINK,
   ORDERED_LIST,
@@ -15,6 +17,8 @@ import { LexisExtension } from "./extension";
 export const MARKDOWN_TRANSFORMERS = [
   HEADING,
   QUOTE,
+  CODE,
+  INLINE_CODE,
   UNORDERED_LIST,
   ORDERED_LIST,
   BOLD_STAR,

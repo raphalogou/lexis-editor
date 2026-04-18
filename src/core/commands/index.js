@@ -1,4 +1,5 @@
 import { commands as blockCommands } from "./block";
+import { commands as dividerCommands } from "./divider";
 import { commands as formatCommands } from "./format";
 import { commands as historyCommands } from "./history";
 import { commands as linkCommands } from "./link";
@@ -9,6 +10,7 @@ export {
   TOGGLE_HEADING_COMMAND,
   TOGGLE_QUOTE_COMMAND,
 } from "./block";
+export { commands as dividerCommands } from "./divider";
 export { commands as formatCommands } from "./format";
 export { commands as historyCommands } from "./history";
 export { commands as linkCommands } from "./link";
@@ -20,4 +22,5 @@ export const commands = [
   ...blockCommands,
   ...linkCommands,
   ...historyCommands,
+  ...dividerCommands,
 ];
