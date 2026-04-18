@@ -138,6 +138,7 @@ export class LexisEditorElement extends HTMLElement {
    */
   #setupEditor() {
     this.#editorInstance = new Editor(this.$rootEl);
+    this.#editorInstance.attachHostElement(this);
 
     for (const cmd of commands) {
       this.#editorInstance.registerCommand(cmd);

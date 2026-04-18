@@ -34,7 +34,7 @@ export function jsxs(type, props) {
  * const MyComponent = (props) => h('div', {}, props.message);
  * h(MyComponent, { message: 'Hello' })
  */
-export function createElement(tag, { children, ...props }) {
+export function createElement(tag, { children, ...props } = {}) {
   const el =
     typeof tag === "function" ? tag(props ?? {}) : document.createElement(tag);
 

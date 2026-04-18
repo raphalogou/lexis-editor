@@ -17,6 +17,13 @@ export class LexisExtension {
   }
 
   /**
+   * @returns {import('../../elements/editor').LexisEditorElement|null}
+   */
+  get hostElement() {
+    return this.editor.hostElement;
+  }
+
+  /**
    * @returns {import('lexical').LexicalExtension}
    */
   get lexicalExtension() {

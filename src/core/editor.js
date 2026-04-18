@@ -50,6 +50,9 @@ export class Editor {
   /** @type {import('@lexical/history').HistoryState} */
   historyState = null;
 
+  /** @type {import('../elements/editor').LexisEditorElement|null} */
+  hostElement = null;
+
   /**
    * @param {HTMLElement} rootEl
    */
@@ -69,6 +72,14 @@ export class Editor {
     }
   }
 
+  /**
+   * @param {import('../elements/editor').LexisEditorElement|null} hostElement
+   * @returns {void}
+   */
+  attachHostElement(hostElement) {
+    this.hostElement = hostElement;
+  }
+
   destroy() {
     for (const ext of this.enabledExtensions) {
       ext.dispose();
@@ -80,6 +91,7 @@ export class Editor {
     this.#extensions.clear();
     this.#commands = null;
     this.lexicalEditor = null;
+    this.hostElement = null;
     this.#cache = { value: null, textValue: null };
   }
 

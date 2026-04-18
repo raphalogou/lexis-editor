@@ -1,8 +1,17 @@
-import { $createCodeNode, CodeHighlightNode, CodeNode } from "@lexical/code";
-import { registerCodeHighlighting } from "@lexical/code-prism";
+import {
+  $createCodeNode,
+  $isCodeNode,
+  CodeHighlightNode,
+  CodeNode,
+} from "@lexical/code";
+import {
+  loadCodeLanguage,
+  registerCodeHighlighting,
+} from "@lexical/code-prism";
 import { $getNearestNodeOfType } from "@lexical/utils";
 import {
   $createParagraphNode,
+  $getNodeByKey,
   $getSelection,
   $isRangeSelection,
   COMMAND_PRIORITY_EDITOR,
@@ -11,12 +20,54 @@ import {
   KEY_ARROW_DOWN_COMMAND,
   mergeRegister,
 } from "lexical";
-
+import { ListenerRegistry, registerEventListener } from "../../helper/listener";
+import { logger } from "../logger";
 import { transformBlock } from "../utils";
 import { LexisExtension } from "./extension";
 
-const DEFAULT_CODE_BLOCK_LANGUAGE = "javascript";
+// Additional Prism grammars not preloaded by @lexical/code-prism.
+import "prismjs/components/prism-bash.js";
+import "prismjs/components/prism-csharp.js";
+import "prismjs/components/prism-diff.js";
+import "prismjs/components/prism-go.js";
+import "prismjs/components/prism-json.js";
+import "prismjs/components/prism-kotlin.js";
+import "prismjs/components/prism-markup-templating.js";
+import "prismjs/components/prism-php.js";
+import "prismjs/components/prism-r.js";
+import "prismjs/components/prism-ruby.js";
+
+const DEFAULT_CODE_BLOCK_LANGUAGE = "plain";
 const DEFAULT_CODE_BLOCK_THEME = "one-light";
+
+const FRIENDLY_LANGUAGE_LABELS = [
+  ["bash", "Bash"],
+  ["c", "C"],
+  ["clike", "C-like"],
+  ["cpp", "C++"],
+  ["csharp", "C#"],
+  ["css", "CSS"],
+  ["diff", "Diff"],
+  ["go", "Go"],
+  ["html", "HTML"],
+  ["java", "Java"],
+  ["javascript", "JavaScript"],
+  ["json", "JSON"],
+  ["kotlin", "Kotlin"],
+  ["markdown", "Markdown"],
+  ["objectivec", "Objective-C"],
+  ["php", "PHP"],
+  ["plain", "Plain Text"],
+  ["powershell", "PowerShell"],
+  ["python", "Python"],
+  ["r", "R"],
+  ["ruby", "Ruby"],
+  ["rust", "Rust"],
+  ["sql", "SQL"],
+  ["swift", "Swift"],
+  ["typescript", "TypeScript"],
+  ["xml", "XML"],
+];
 
 export const TOGGLE_CODE_BLOCK_COMMAND = createCommand(
   "TOGGLE_CODE_BLOCK_COMMAND",
@@ -26,8 +77,28 @@ function createDefaultCodeNode() {
   return $createCodeNode(DEFAULT_CODE_BLOCK_LANGUAGE, DEFAULT_CODE_BLOCK_THEME);
 }
 
+function buildLanguageOptions() {
+  return [...FRIENDLY_LANGUAGE_LABELS].sort((a, b) =>
+    a[1].localeCompare(b[1], undefined, { sensitivity: "base" }),
+  );
+}
+
+const CODE_LANGUAGE_OPTIONS = buildLanguageOptions();
+
 export class CodeBlockExtension extends LexisExtension {
   name = "code-block";
+
+  /** @type {import('../../helper/listener').ListenerRegistry} */
+  #listeners = new ListenerRegistry();
+
+  /** @type {HTMLSelectElement | null} */
+  #languagePicker = null;
+
+  /** @type {string | null} */
+  #activeCodeBlockKey = null;
+
+  /** @type {string} */
+  #lastVisibleCodeBlockKey = "";
 
   get lexicalExtension() {
     return defineExtension({
@@ -48,6 +119,12 @@ export class CodeBlockExtension extends LexisExtension {
           ),
 
           registerCodeHighlighting(lexicalEditor),
+
+          lexicalEditor.registerUpdateListener(() => {
+            lexicalEditor.read(() => {
+              this.#syncLanguagePicker(lexicalEditor);
+            });
+          }),
         );
       },
     });
@@ -75,7 +152,6 @@ export class CodeBlockExtension extends LexisExtension {
       },
     ];
   }
-  
 
   /**
    * Check if cursor is inside a code block
@@ -135,5 +211,141 @@ export class CodeBlockExtension extends LexisExtension {
     if (!$isRangeSelection(selection)) return null;
 
     return $getNearestNodeOfType(selection.focus.getNode(), CodeNode);
+  }
+
+  /**
+   * @param {import('lexical').LexicalEditor} lexicalEditor
+   */
+  #syncLanguagePicker(lexicalEditor) {
+    const codeBlockNode = this.#getCodeBlockNode();
+    if (!codeBlockNode) {
+      this.#hideLanguagePicker();
+      return;
+    }
+
+    const codeBlockKey = codeBlockNode.getKey();
+    const codeBlockElement = lexicalEditor.getElementByKey(codeBlockKey);
+    if (!codeBlockElement) {
+      this.#hideLanguagePicker();
+      return;
+    }
+
+    this.#activeCodeBlockKey = codeBlockKey;
+    this.#showLanguagePicker(
+      codeBlockElement,
+      codeBlockNode.getLanguage() || DEFAULT_CODE_BLOCK_LANGUAGE,
+    );
+  }
+
+  /**
+   * @param {HTMLElement} codeBlockElement
+   * @param {string} activeLanguage
+   */
+  #showLanguagePicker(codeBlockElement, activeLanguage) {
+    const picker = this.#getLanguagePicker();
+    picker.hidden = false;
+
+    if (picker.value !== activeLanguage) {
+      picker.value = activeLanguage;
+    }
+
+    const codeBlockKey = this.#activeCodeBlockKey || "";
+    if (this.#lastVisibleCodeBlockKey === codeBlockKey) {
+      return;
+    }
+
+    this.#lastVisibleCodeBlockKey = codeBlockKey;
+
+    const hostElement = this.hostElement;
+    if (!hostElement) return;
+
+    const hostBounds = hostElement.getBoundingClientRect();
+    const codeBounds = codeBlockElement.getBoundingClientRect();
+
+    picker.style.top = `${codeBounds.top - hostBounds.top + 8}px`;
+    picker.style.left = `${
+      codeBounds.right - hostBounds.left - picker.offsetWidth - 8
+    }px`;
+  }
+
+  #hideLanguagePicker() {
+    this.#activeCodeBlockKey = null;
+    this.#lastVisibleCodeBlockKey = "";
+
+    if (!this.#languagePicker) return;
+    this.#languagePicker.hidden = true;
+  }
+
+  /**
+   * @returns {HTMLSelectElement}
+   */
+  #getLanguagePicker() {
+    if (this.#languagePicker) {
+      return this.#languagePicker;
+    }
+
+    const hostElement = this.hostElement;
+    if (!hostElement) {
+      throw new Error("CodeBlockExtension requires hostElement");
+    }
+
+    const picker = document.createElement("select");
+    picker.dataset.slot = "code-block-language-picker";
+    picker.className = "lexis-code-language-picker";
+    picker.hidden = true;
+    picker.style.position = "absolute";
+    picker.style.zIndex = "5";
+
+    for (const [value, label] of CODE_LANGUAGE_OPTIONS) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      picker.append(option);
+    }
+
+    this.#listeners.track(
+      registerEventListener(picker, "change", () => {
+        this.#updateActiveCodeBlockLanguage(picker.value);
+      }),
+    );
+
+    hostElement.append(picker);
+    this.#languagePicker = picker;
+    return picker;
+  }
+
+  /**
+   * @param {string} language
+   */
+  #updateActiveCodeBlockLanguage(language) {
+    const codeBlockKey = this.#activeCodeBlockKey;
+    if (!codeBlockKey) return;
+
+    this.editor.lexicalEditor.update(() => {
+      const node = $getNodeByKey(codeBlockKey);
+      if (!$isCodeNode(node)) {
+        return;
+      }
+
+      if (node.getLanguage() !== language) {
+        node.setLanguage(language);
+      }
+    });
+
+    loadCodeLanguage(language).catch((error) => {
+      logger.debug("Failed to load code language", { language, error });
+    });
+  }
+
+  dispose() {
+    this.#listeners.cleanup();
+
+    if (this.#languagePicker?.isConnected) {
+      this.#languagePicker.remove();
+    }
+
+    this.#languagePicker = null;
+    this.#activeCodeBlockKey = null;
+    this.#lastVisibleCodeBlockKey = "";
   }
 }
