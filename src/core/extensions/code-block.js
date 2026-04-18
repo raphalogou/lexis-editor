@@ -15,9 +15,16 @@ import {
 import { transformBlock } from "../utils";
 import { LexisExtension } from "./extension";
 
+const DEFAULT_CODE_BLOCK_LANGUAGE = "javascript";
+const DEFAULT_CODE_BLOCK_THEME = "one-light";
+
 export const TOGGLE_CODE_BLOCK_COMMAND = createCommand(
   "TOGGLE_CODE_BLOCK_COMMAND",
 );
+
+function createDefaultCodeNode() {
+  return $createCodeNode(DEFAULT_CODE_BLOCK_LANGUAGE, DEFAULT_CODE_BLOCK_THEME);
+}
 
 export class CodeBlockExtension extends LexisExtension {
   name = "code-block";
@@ -30,55 +37,13 @@ export class CodeBlockExtension extends LexisExtension {
         return mergeRegister(
           lexicalEditor.registerCommand(
             TOGGLE_CODE_BLOCK_COMMAND,
-            () => {
-              if (this.#isInsideCodeBlock()) {
-                transformBlock(lexicalEditor, $createParagraphNode);
-              } else {
-                transformBlock(lexicalEditor, () => {
-                  return $createCodeNode("javascript", "one-light");
-                });
-              }
-              return true;
-            },
+            () => this.#toggleCodeBlock(lexicalEditor),
             COMMAND_PRIORITY_EDITOR,
           ),
 
           lexicalEditor.registerCommand(
             KEY_ARROW_DOWN_COMMAND,
-            () => {
-              const selection = $getSelection();
-              if (!$isRangeSelection(selection) || !this.#isInsideCodeBlock()) {
-                return false;
-              }
-
-              const codeBlockNode = this.#getCodeBlockNode();
-              if (!codeBlockNode) {
-                return false;
-              }
-
-              const lastChild = codeBlockNode.getLastChild();
-              if (!lastChild) {
-                return false;
-              }
-
-              const focusNode = selection.focus.getNode();
-
-              if (lastChild.getKey() !== focusNode.getKey()) {
-                return false;
-              }
-
-              const nextSibling = codeBlockNode.getNextSibling();
-
-              if (!nextSibling) {
-                const paragraphNode = $createParagraphNode();
-                codeBlockNode.insertAfter(paragraphNode);
-                paragraphNode.selectStart();
-                return true;
-              }
-
-              nextSibling.selectStart();
-              return true;
-            },
+            () => this.#handleArrowDownInCodeBlock(),
             COMMAND_PRIORITY_EDITOR,
           ),
 
@@ -110,6 +75,7 @@ export class CodeBlockExtension extends LexisExtension {
       },
     ];
   }
+  
 
   /**
    * Check if cursor is inside a code block
@@ -118,6 +84,50 @@ export class CodeBlockExtension extends LexisExtension {
    */
   #isInsideCodeBlock() {
     return this.#getCodeBlockNode() !== null;
+  }
+
+  /**
+   * @param {import('lexical').LexicalEditor} lexicalEditor
+   * @returns {boolean}
+   */
+  #toggleCodeBlock(lexicalEditor) {
+    if (this.#isInsideCodeBlock()) {
+      transformBlock(lexicalEditor, $createParagraphNode);
+      return true;
+    }
+
+    transformBlock(lexicalEditor, createDefaultCodeNode);
+    return true;
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  #handleArrowDownInCodeBlock() {
+    const selection = $getSelection();
+    if (!$isRangeSelection(selection)) {
+      return false;
+    }
+
+    const focusNode = selection.focus.getNode();
+    const codeBlockNode = $getNearestNodeOfType(focusNode, CodeNode);
+    if (!codeBlockNode) {
+      return false;
+    }
+
+    const lastChild = codeBlockNode.getLastChild();
+    if (!lastChild || lastChild.getKey() !== focusNode.getKey()) {
+      return false;
+    }
+
+    let nextSibling = codeBlockNode.getNextSibling();
+    if (!nextSibling) {
+      nextSibling = $createParagraphNode();
+      codeBlockNode.insertAfter(nextSibling);
+    }
+
+    nextSibling.selectStart();
+    return true;
   }
 
   #getCodeBlockNode() {
