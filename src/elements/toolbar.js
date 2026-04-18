@@ -1,7 +1,6 @@
 import { logger } from "../core/logger";
-import { createElement } from "../helper/jsx-runtime";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
-import "./popover";
+import { ToolbarTemplateBuilder } from "../helper/toolbar-builder";
 
 export class LexisToolbarElement extends HTMLElement {
   /**
@@ -13,8 +12,13 @@ export class LexisToolbarElement extends HTMLElement {
 
   #buttonStateCache = new Map();
 
+  #groupMap = new Map();
+
   /** @type {import('../helper/listener').ListenerRegistry} */
   #listeners = new ListenerRegistry();
+
+  /** @type {import('../helper/listener').ListenerRegistry} */
+  #groupListeners = new ListenerRegistry();
 
   connectedCallback() {
     // Register command controls
@@ -32,40 +36,56 @@ export class LexisToolbarElement extends HTMLElement {
   /**
    * @param {string} template
    * @param {import('../core/editor').Editor} editor
-   * @param {(token: string, toolbar: LexisToolbarElement) => HTMLElement | null} [buildCustomControl]
+   * @param {{
+   * buildCustomControl?: (token: string, toolbar: LexisToolbarElement) => HTMLElement | null,
+   * groups?: Record<string, string[]>
+   * }} [options]
    */
-  buildFromTemplate(template, editor, buildCustomControl = () => null) {
+  buildFromTemplate(template, editor, options = {}) {
     this.replaceChildren();
     this.#buttonMap.clear();
+    this.#groupMap.clear();
+    this.#groupListeners.cleanup();
 
-    for (const token of parseToolbarTemplate(template)) {
-      if (token === "|") {
-        this.append(buildSeparator());
-        continue;
-      }
+    const builder = new ToolbarTemplateBuilder({
+      template,
+      editor,
+      toolbar: this,
+      ...options,
+    });
 
-      if (token === "~") {
-        this.append(buildSpacer());
-        continue;
-      }
+    const { commandControls, groupControls, unknownTokens } =
+      builder.build(this);
 
-      const control =
-        (typeof buildCustomControl === "function"
-          ? buildCustomControl(token, this)
-          : null) || this.#buildCommandControl(token, editor);
-      if (!control) {
-        logger.debug(`Unknown toolbar command: ${token}`);
-        continue;
-      }
+    commandControls.forEach((control, commandId) => {
+      this.#buttonMap.set(commandId, control);
+    });
 
-      this.append(control);
+    groupControls.forEach((group, token) => {
+      this.#groupMap.set(token, group);
+      this.#groupListeners.track(
+        registerEventListener(group.select, "change", () => {
+          group.select.dispatchEvent(
+            new CustomEvent("editor:command", {
+              detail: { command: group.select.value },
+              bubbles: true,
+            }),
+          );
+        }),
+      );
+    });
+
+    for (const token of unknownTokens) {
+      logger.debug(`Unknown toolbar command: ${token}`);
     }
   }
 
   disconnectedCallback() {
+    this.#groupListeners.cleanup();
     this.#listeners.cleanup();
     this.#buttonMap.clear();
     this.#buttonStateCache.clear();
+    this.#groupMap.clear();
   }
 
   /**
@@ -104,39 +124,6 @@ export class LexisToolbarElement extends HTMLElement {
    */
   registerControl(commandId, element) {
     this.#buttonMap.set(commandId, element);
-  }
-
-  /**
-   * @param {string} commandId
-   * @param {import('../core/editor').Editor} editor
-   * @returns {HTMLElement|null}
-   */
-  #buildCommandControl(commandId, editor) {
-    const command = editor.getCommand(commandId);
-    if (!command) {
-      return null;
-    }
-
-    const customRender = command.renderControl || command.render;
-    if (typeof customRender === "function") {
-      const control = customRender(this, editor);
-      if (control) {
-        control.dataset.command = control.dataset.command || commandId;
-        this.#buttonMap.set(commandId, control);
-      }
-
-      return control;
-    }
-
-    const button = createElement("button", {
-      type: "button",
-      class: "lexis-button",
-      "data-command": commandId,
-      children: [command.label],
-    });
-
-    this.#buttonMap.set(commandId, button);
-    return button;
   }
 
   dispatchCommandEvent = (evt) => {
@@ -189,6 +176,49 @@ export class LexisToolbarElement extends HTMLElement {
         });
       }
     });
+
+    this.#reflectGroupState();
+  }
+
+  #reflectGroupState() {
+    this.#groupMap.forEach((group) => {
+      const { select, commands, optionsByCommand } = group;
+      let activeCommand = "";
+      let disabledCount = 0;
+
+      for (const commandId of commands) {
+        const isDisabled = this.#editor.isDisabled(commandId);
+        const option = optionsByCommand.get(commandId);
+        if (option) {
+          option.disabled = isDisabled;
+        }
+
+        if (isDisabled) {
+          disabledCount++;
+        }
+
+        if (!activeCommand && this.#editor.isActive(commandId)) {
+          activeCommand = commandId;
+        }
+      }
+
+      if (activeCommand) {
+        select.value = activeCommand;
+      } else if (!select.value && commands.length > 0) {
+        const firstEnabled = commands.find(
+          (id) => !this.#editor.isDisabled(id),
+        );
+        select.value = firstEnabled || commands[0];
+      }
+
+      select.disabled = disabledCount === commands.length;
+
+      if (activeCommand) {
+        select.setAttribute("data-state", "active");
+      } else {
+        select.removeAttribute("data-state");
+      }
+    });
   }
 
   #clearActiveStates() {
@@ -197,23 +227,9 @@ export class LexisToolbarElement extends HTMLElement {
     });
 
     this.#buttonStateCache.clear();
+
+    this.#groupMap.forEach(({ select }) => {
+      select.removeAttribute("data-state");
+    });
   }
-}
-
-function parseToolbarTemplate(template = "") {
-  return template.match(/\||~|[^\s|~]+/g) || [];
-}
-
-function buildSeparator() {
-  return createElement("span", {
-    "data-slot": "toolbar-separator",
-    "aria-hidden": "true",
-  });
-}
-
-function buildSpacer() {
-  return createElement("span", {
-    "data-slot": "toolbar-spacer",
-    "aria-hidden": "true",
-  });
 }

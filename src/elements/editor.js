@@ -10,7 +10,8 @@ export class LexisEditorElement extends HTMLElement {
    * markdown: boolean,
    * extensions: Array<typeof import('../core/extensions/extension').LexisExtension>,
    * extensionMode: 'append' | 'replace',
-   * lexical: { namespace?: string, theme?: Record<string, any> }
+   * lexical: { namespace?: string, theme?: Record<string, any> },
+   * toolbar: { template: string, groups: Record<string, string[]> }
    * }}
    */
   static defaultConfig = {
@@ -18,10 +19,14 @@ export class LexisEditorElement extends HTMLElement {
     extensions: [],
     extensionMode: "append",
     lexical: {},
+    toolbar: {
+      template:
+        "bold italic underline code | format divider code-block | number-list bullet-list | link ~ undo redo",
+      groups: {
+        format: ["paragraph", "heading-2", "heading-3", "heading-4", "quote"],
+      },
+    },
   };
-
-  static defaultToolbarTemplate =
-    "bold italic underline code | heading-2 heading-3 paragraph quote divider code-block | number-list bullet-list | link ~ undo redo";
 
   /** @type {import('../core/editor').Editor} */
   #editorInstance;
@@ -233,7 +238,7 @@ export class LexisEditorElement extends HTMLElement {
    * @private
    * @returns {LexisToolbarElement}
    */
-  #buildToolbar(template = LexisEditorElement.defaultToolbarTemplate) {
+  #buildToolbar(template = this.#resolvedConfig?.toolbar?.template) {
     const toolbar = document.createElement("lexis-toolbar");
     const controlsByToken = new Map();
 
@@ -256,14 +261,17 @@ export class LexisEditorElement extends HTMLElement {
       controlsByToken.set(token, control);
     }
 
-    toolbar.buildFromTemplate(template, this.editor, (token) => {
-      const control = controlsByToken.get(token);
-      if (!control) {
-        return null;
-      }
+    toolbar.buildFromTemplate(template, this.editor, {
+      buildCustomControl: (token) => {
+        const control = controlsByToken.get(token);
+        if (!control) {
+          return null;
+        }
 
-      controlsByToken.delete(token);
-      return control;
+        controlsByToken.delete(token);
+        return control;
+      },
+      groups: this.#resolvedConfig?.toolbar?.groups || {},
     });
 
     return toolbar;
@@ -377,6 +385,12 @@ export class LexisEditorElement extends HTMLElement {
       ...LexisEditorElement.defaultConfig,
       extensions: [...LexisEditorElement.defaultConfig.extensions],
       lexical: { ...LexisEditorElement.defaultConfig.lexical },
+      toolbar: {
+        ...LexisEditorElement.defaultConfig.toolbar,
+        groups: cloneToolbarGroups(
+          LexisEditorElement.defaultConfig.toolbar.groups,
+        ),
+      },
     };
 
     if (this.hasAttribute("markdown")) {
@@ -397,11 +411,7 @@ export class LexisEditorElement extends HTMLElement {
         bubbles: true,
         composed: true,
         detail: {
-          config: Object.freeze({
-            ...draftConfig,
-            extensions: [...draftConfig.extensions],
-            lexical: { ...(draftConfig.lexical || {}) },
-          }),
+          config: freezeConfigSnapshot(draftConfig),
           configure,
           editorElement: this,
         },
@@ -420,10 +430,7 @@ export class LexisEditorElement extends HTMLElement {
         composed: true,
         detail: {
           editor: this.#editorInstance,
-          config: Object.freeze({
-            ...config,
-            lexical: { ...(config.lexical || {}) },
-          }),
+          config: freezeConfigSnapshot(config),
         },
       }),
     );
@@ -433,10 +440,30 @@ export class LexisEditorElement extends HTMLElement {
 function normalizeEditorConfig(input) {
   return {
     markdown: input.markdown === true,
-    extensions: Array.isArray(input.extensions) ? input.extensions : [],
+    extensions: Array.isArray(input.extensions) ? [...input.extensions] : [],
     extensionMode: input.extensionMode === "replace" ? "replace" : "append",
     lexical:
-      input.lexical && typeof input.lexical === "object" ? input.lexical : {},
+      input.lexical && typeof input.lexical === "object"
+        ? { ...input.lexical }
+        : {},
+    toolbar: isPlainObject(input.toolbar)
+      ? {
+          template:
+            typeof input.toolbar.template === "string"
+              ? input.toolbar.template
+              : LexisEditorElement.defaultConfig.toolbar.template,
+          groups: isPlainObject(input.toolbar.groups)
+            ? cloneToolbarGroups(input.toolbar.groups)
+            : cloneToolbarGroups(
+                LexisEditorElement.defaultConfig.toolbar.groups,
+              ),
+        }
+      : {
+          ...LexisEditorElement.defaultConfig.toolbar,
+          groups: cloneToolbarGroups(
+            LexisEditorElement.defaultConfig.toolbar.groups,
+          ),
+        },
   };
 }
 
@@ -445,7 +472,7 @@ function applyConfigPatch(target, patch) {
     return;
   }
 
-  const { markdown, extensions, extensionMode, lexical } = patch;
+  const { markdown, extensions, extensionMode, lexical, toolbar } = patch;
 
   if (markdown !== undefined) {
     target.markdown = markdown === true;
@@ -461,6 +488,10 @@ function applyConfigPatch(target, patch) {
 
   if (isPlainObject(lexical)) {
     target.lexical = deepMergeObjects(target.lexical || {}, lexical);
+  }
+
+  if (isPlainObject(toolbar)) {
+    target.toolbar = deepMergeObjects(target.toolbar || {}, toolbar);
   }
 }
 
@@ -481,4 +512,31 @@ function deepMergeObjects(base, overrides) {
   }
 
   return output;
+}
+
+function cloneToolbarGroups(groups) {
+  if (!isPlainObject(groups)) {
+    return {};
+  }
+
+  const clonedGroups = {};
+  for (const [token, commands] of Object.entries(groups)) {
+    if (Array.isArray(commands)) {
+      clonedGroups[token] = [...commands];
+    }
+  }
+
+  return clonedGroups;
+}
+
+function freezeConfigSnapshot(config) {
+  return Object.freeze({
+    ...config,
+    extensions: Array.isArray(config.extensions) ? [...config.extensions] : [],
+    lexical: { ...(config.lexical || {}) },
+    toolbar: Object.freeze({
+      template: config.toolbar?.template || "",
+      groups: Object.freeze(cloneToolbarGroups(config.toolbar?.groups)),
+    }),
+  });
 }
