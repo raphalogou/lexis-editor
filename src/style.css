@@ -3,7 +3,21 @@
 @import "sanitize.css/typography.css";
 
 :root {
-  --lexis-control-border: #4b5263;
+  --lexis-toolbar-bg: #f4f6fb;
+  --lexis-toolbar-fg: #2f3340;
+  --lexis-toolbar-border: #d9deea;
+  --lexis-toolbar-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
+  --lexis-toolbar-gap: 0.25rem;
+  --lexis-toolbar-padding: 0.35rem;
+  --lexis-toolbar-radius: 0.5rem;
+  --lexis-toolbar-control-size: 2rem;
+  --lexis-toolbar-control-radius: 0.35rem;
+  --lexis-toolbar-select-min-width: 14ch;
+  --lexis-toolbar-control-hover-bg: #edf1f8;
+  --lexis-toolbar-control-active-bg: #dce7ff;
+  --lexis-toolbar-control-active-fg: #15306b;
+  --lexis-toolbar-control-disabled-opacity: 0.42;
+  --lexis-toolbar-separator: #cdd3e2;
 }
 
 :root,
@@ -134,39 +148,70 @@ lexis-toolbar,
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--lexis-toolbar-gap);
+  padding: var(--lexis-toolbar-padding);
+  border: 1px solid var(--lexis-toolbar-border);
+  border-radius: var(--lexis-toolbar-radius);
+  background: var(--lexis-toolbar-bg);
+  color: var(--lexis-toolbar-fg);
+  box-shadow: var(--lexis-toolbar-shadow);
+}
+
+lexis-toolbar[data-size="sm"],
+[data-slot="editor-toolbar"][data-size="sm"] {
+  --lexis-toolbar-gap: 0.2rem;
+  --lexis-toolbar-padding: 0.25rem;
+  --lexis-toolbar-radius: 0.42rem;
+  --lexis-toolbar-control-size: 1.75rem;
+  --lexis-toolbar-control-radius: 0.3rem;
+  --lexis-toolbar-select-min-width: 6.75rem;
 }
 
 .lexis-select {
-  min-height: 2rem;
-  border-radius: 4px;
-  padding: 0.25rem 1.75rem 0.25rem 0.5rem;
-  border: 1px solid var(--lexis-control-border);
+  min-width: var(--lexis-toolbar-select-min-width);
+  min-height: var(--lexis-toolbar-control-size);
+  border-radius: var(--lexis-toolbar-control-radius);
+  padding: 0.35rem 2rem 0.35rem 0.55rem;
+  border: 0;
   appearance: none;
   cursor: pointer;
   background-color: transparent;
+  color: inherit;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%234b5563' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-position: calc(100% - 0.5rem) center;
-  background-size: 1.05rem 1.05rem;
+  background-position: calc(100% - 0.7rem) center;
+  background-size: 1.15rem 1.15rem;
   background-repeat: no-repeat;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 
   &:not(:disabled):hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: var(--lexis-toolbar-control-hover-bg);
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: var(--lexis-toolbar-control-disabled-opacity);
   }
 
-  &:has([data-state="active"]) {
-    border-color: #3c84f4;
+  &[data-state="active"] {
+    background-color: var(--lexis-toolbar-control-active-bg);
+    color: var(--lexis-toolbar-control-active-fg);
   }
+}
+
+lexis-toolbar[data-size="sm"] .lexis-select,
+[data-slot="editor-toolbar"][data-size="sm"] .lexis-select {
+  padding: 0.25rem 1.5rem 0.25rem 0.45rem;
+  font-size: 0.85rem;
+  background-position: calc(100% - 0.55rem) center;
+  background-size: 0.95rem 0.95rem;
 }
 
 [data-slot="toolbar-separator"] {
   width: 1px;
-  height: 1.25rem;
-  background: #c5cad6;
+  height: 1.5rem;
+  margin-inline: 0.5rem;
+  background: var(--lexis-toolbar-separator);
 }
 
 [data-slot="toolbar-spacer"] {
@@ -400,23 +445,59 @@ lexis-toolbar,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  min-height: var(--lexis-toolbar-control-size);
+  border: 0;
+  border-radius: var(--lexis-toolbar-control-radius);
+  background: transparent;
+  color: inherit;
   padding: 0.25rem 0.5rem;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 
   &:not(:disabled):hover,
   &[data-state="active"] {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: var(--lexis-toolbar-control-hover-bg);
+  }
+
+  &[data-state="active"] {
+    background-color: var(--lexis-toolbar-control-active-bg);
+    color: var(--lexis-toolbar-control-active-fg);
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: var(--lexis-toolbar-control-disabled-opacity);
   }
 }
 
 .lexis-button--icon {
-  width: 2rem;
-  height: 2rem;
+  width: var(--lexis-toolbar-control-size);
+  height: var(--lexis-toolbar-control-size);
   padding: 0;
+}
+
+lexis-toolbar[data-size="sm"] .lexis-button,
+[data-slot="editor-toolbar"][data-size="sm"] .lexis-button {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.9rem;
+}
+
+lexis-toolbar[data-size="sm"] [data-slot="toolbar-separator"],
+[data-slot="editor-toolbar"][data-size="sm"] [data-slot="toolbar-separator"] {
+  height: 1rem;
+  margin-inline: 0.35rem;
+}
+
+[data-slot="toolbar-icon"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
+
+lexis-toolbar[data-size="sm"] [data-slot="toolbar-icon"],
+[data-slot="editor-toolbar"][data-size="sm"] [data-slot="toolbar-icon"] {
+  width: 1rem;
+  height: 1rem;
 }
 
 [data-slot="toolbar-icon-wrapper"] {
@@ -424,12 +505,6 @@ lexis-toolbar,
   align-items: center;
   justify-content: center;
   line-height: 1;
-}
-
-[data-slot="toolbar-icon"] {
-  width: 1.25rem;
-  height: 1.25rem;
-  display: block;
 }
 
 .input-group {
