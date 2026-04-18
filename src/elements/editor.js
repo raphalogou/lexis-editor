@@ -20,6 +20,9 @@ export class LexisEditorElement extends HTMLElement {
     lexical: {},
   };
 
+  static defaultToolbarTemplate =
+    "bold italic underline code | heading-2 heading-3 paragraph quote divider code-block | number-list bullet-list | link ~ undo redo";
+
   /** @type {import('../core/editor').Editor} */
   #editorInstance;
 
@@ -179,14 +182,22 @@ export class LexisEditorElement extends HTMLElement {
   }
 
   #attachToolbar() {
+    if (this.#isToolbarDisabled()) {
+      this.toolbar = null;
+      return;
+    }
+
     this.toolbar = this.#getToolbar() ?? this.#buildToolbar();
 
-    for (const ext of this.editor.enabledExtensions) {
-      const control = ext.render(this.toolbar);
-      control && this.toolbar.append(control);
+    if (!this.toolbar.isConnected) {
+      this.prepend(this.toolbar);
     }
 
     this.toolbar.attachEditor(this);
+  }
+
+  #isToolbarDisabled() {
+    return this.getAttribute("toolbar")?.trim() === "false";
   }
 
   /**
@@ -195,14 +206,26 @@ export class LexisEditorElement extends HTMLElement {
    * @returns {LexisToolbarElement|null}
    */
   #getToolbar() {
-    let toolbar = this.querySelector("lexis-toolbar");
-
-    if (!toolbar && this.hasAttribute("toolbar")) {
-      const toolbarId = this.getAttribute("toolbar");
-      toolbar = document.getElementById(toolbarId);
+    const inlineToolbar = this.querySelector("lexis-toolbar");
+    if (inlineToolbar instanceof LexisToolbarElement) {
+      return inlineToolbar;
     }
 
-    return toolbar instanceof LexisToolbarElement ? toolbar : null;
+    if (!this.hasAttribute("toolbar")) {
+      return null;
+    }
+
+    const toolbarValue = this.getAttribute("toolbar")?.trim();
+    if (!toolbarValue || toolbarValue === "false") {
+      return null;
+    }
+
+    const toolbarById = document.getElementById(toolbarValue);
+    if (toolbarById instanceof LexisToolbarElement) {
+      return toolbarById;
+    }
+
+    return this.#buildToolbar(toolbarValue);
   }
 
   /**
@@ -210,8 +233,40 @@ export class LexisEditorElement extends HTMLElement {
    * @private
    * @returns {LexisToolbarElement}
    */
-  #buildToolbar() {
-    return document.createElement("lexis-toolbar");
+  #buildToolbar(template = LexisEditorElement.defaultToolbarTemplate) {
+    const toolbar = document.createElement("lexis-toolbar");
+    const controlsByToken = new Map();
+
+    for (const ext of this.editor.enabledExtensions) {
+      const control = ext.render(toolbar);
+      if (!control) {
+        continue;
+      }
+
+      const token =
+        control.dataset.lexisControl ||
+        control.dataset.command ||
+        ext.name ||
+        "";
+
+      if (!token) {
+        continue;
+      }
+
+      controlsByToken.set(token, control);
+    }
+
+    toolbar.buildFromTemplate(template, this.editor, (token) => {
+      const control = controlsByToken.get(token);
+      if (!control) {
+        return null;
+      }
+
+      controlsByToken.delete(token);
+      return control;
+    });
+
+    return toolbar;
   }
 
   /**

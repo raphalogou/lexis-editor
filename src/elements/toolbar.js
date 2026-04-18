@@ -1,4 +1,5 @@
 import { logger } from "../core/logger";
+import { createElement } from "../helper/jsx-runtime";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
 import "./popover";
 
@@ -26,6 +27,39 @@ export class LexisToolbarElement extends HTMLElement {
       registerEventListener(this, "click", this.dispatchCommandEvent),
       registerEventListener(this, "editor:command", this.handleEditorCommand),
     );
+  }
+
+  /**
+   * @param {string} template
+   * @param {import('../core/editor').Editor} editor
+   * @param {(token: string, toolbar: LexisToolbarElement) => HTMLElement | null} [buildCustomControl]
+   */
+  buildFromTemplate(template, editor, buildCustomControl = () => null) {
+    this.replaceChildren();
+    this.#buttonMap.clear();
+
+    for (const token of parseToolbarTemplate(template)) {
+      if (token === "|") {
+        this.append(buildSeparator());
+        continue;
+      }
+
+      if (token === "~") {
+        this.append(buildSpacer());
+        continue;
+      }
+
+      const control =
+        (typeof buildCustomControl === "function"
+          ? buildCustomControl(token, this)
+          : null) || this.#buildCommandControl(token, editor);
+      if (!control) {
+        logger.debug(`Unknown toolbar command: ${token}`);
+        continue;
+      }
+
+      this.append(control);
+    }
   }
 
   disconnectedCallback() {
@@ -70,6 +104,39 @@ export class LexisToolbarElement extends HTMLElement {
    */
   registerControl(commandId, element) {
     this.#buttonMap.set(commandId, element);
+  }
+
+  /**
+   * @param {string} commandId
+   * @param {import('../core/editor').Editor} editor
+   * @returns {HTMLElement|null}
+   */
+  #buildCommandControl(commandId, editor) {
+    const command = editor.getCommand(commandId);
+    if (!command) {
+      return null;
+    }
+
+    const customRender = command.renderControl || command.render;
+    if (typeof customRender === "function") {
+      const control = customRender(this, editor);
+      if (control) {
+        control.dataset.command = control.dataset.command || commandId;
+        this.#buttonMap.set(commandId, control);
+      }
+
+      return control;
+    }
+
+    const button = createElement("button", {
+      type: "button",
+      class: "lexis-button",
+      "data-command": commandId,
+      children: [command.label],
+    });
+
+    this.#buttonMap.set(commandId, button);
+    return button;
   }
 
   dispatchCommandEvent = (evt) => {
@@ -131,4 +198,22 @@ export class LexisToolbarElement extends HTMLElement {
 
     this.#buttonStateCache.clear();
   }
+}
+
+function parseToolbarTemplate(template = "") {
+  return template.match(/\||~|[^\s|~]+/g) || [];
+}
+
+function buildSeparator() {
+  return createElement("span", {
+    "data-slot": "toolbar-separator",
+    "aria-hidden": "true",
+  });
+}
+
+function buildSpacer() {
+  return createElement("span", {
+    "data-slot": "toolbar-spacer",
+    "aria-hidden": "true",
+  });
 }

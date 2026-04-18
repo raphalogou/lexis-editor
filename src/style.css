@@ -128,7 +128,20 @@ lexis-editor,
 lexis-toolbar,
 [data-slot="editor-toolbar"] {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+[data-slot="toolbar-separator"] {
+  width: 1px;
+  height: 1.25rem;
+  background: #c5cad6;
+}
+
+[data-slot="toolbar-spacer"] {
+  flex: 1;
+  min-width: 0.75rem;
 }
 
 [data-slot="editor-content"] {
