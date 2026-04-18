@@ -1,5 +1,7 @@
 import {
   $createCodeNode,
+  $getLastCodeNodeOfLine,
+  $isCodeHighlightNode,
   $isCodeNode,
   CodeHighlightNode,
   CodeNode,
@@ -13,7 +15,9 @@ import {
   $createParagraphNode,
   $getNodeByKey,
   $getSelection,
+  $isLineBreakNode,
   $isRangeSelection,
+  $isTabNode,
   COMMAND_PRIORITY_EDITOR,
   createCommand,
   defineExtension,
@@ -186,14 +190,33 @@ export class CodeBlockExtension extends LexisExtension {
     }
 
     const focusNode = selection.focus.getNode();
+    const focusOffset = selection.focus.offset;
     const codeBlockNode = $getNearestNodeOfType(focusNode, CodeNode);
     if (!codeBlockNode) {
       return false;
     }
 
-    const lastChild = codeBlockNode.getLastChild();
-    if (!lastChild || lastChild.getKey() !== focusNode.getKey()) {
-      return false;
+    const lastLineNode = codeBlockNode.getLastChild();
+    if (!lastLineNode) {
+      if (focusNode.getKey() !== codeBlockNode.getKey()) {
+        return false;
+      }
+    } else if (focusNode.getKey() === codeBlockNode.getKey()) {
+      const lastLineIndex = Math.max(0, codeBlockNode.getChildrenSize() - 1);
+      const focusLineIndex = Math.max(0, focusOffset - 1);
+
+      if (focusLineIndex !== lastLineIndex) {
+        return false;
+      }
+    } else {
+      if (!isCodeLineAnchorNode(focusNode)) {
+        return false;
+      }
+
+      const lineEndNode = $getLastCodeNodeOfLine(focusNode);
+      if (lineEndNode.getKey() !== lastLineNode.getKey()) {
+        return false;
+      }
     }
 
     let nextSibling = codeBlockNode.getNextSibling();
@@ -348,4 +371,10 @@ export class CodeBlockExtension extends LexisExtension {
     this.#activeCodeBlockKey = null;
     this.#lastVisibleCodeBlockKey = "";
   }
+}
+
+function isCodeLineAnchorNode(node) {
+  return (
+    $isCodeHighlightNode(node) || $isTabNode(node) || $isLineBreakNode(node)
+  );
 }
