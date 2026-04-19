@@ -2,6 +2,7 @@ import { commands as blockCommands } from "./block";
 import { commands as dividerCommands } from "./divider";
 import { commands as formatCommands } from "./format";
 import { commands as historyCommands } from "./history";
+import { commands as imageCommands } from "./image";
 import { commands as linkCommands } from "./link";
 import { commands as listCommands } from "./list";
 
@@ -13,6 +14,7 @@ export {
 export { commands as dividerCommands } from "./divider";
 export { commands as formatCommands } from "./format";
 export { commands as historyCommands } from "./history";
+export { commands as imageCommands } from "./image";
 export { commands as linkCommands } from "./link";
 export { commands as listCommands } from "./list";
 
@@ -21,6 +23,7 @@ export const commands = [
   ...listCommands,
   ...blockCommands,
   ...linkCommands,
+  ...imageCommands,
   ...historyCommands,
   ...dividerCommands,
 ];

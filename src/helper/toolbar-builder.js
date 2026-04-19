@@ -1,3 +1,4 @@
+import { parseSvgIcon } from "./html";
 import { createElement } from "./jsx-runtime";
 
 export class ToolbarTemplateBuilder {
@@ -190,13 +191,6 @@ function createToolbarIcon(icon, label) {
     "aria-label": label,
     children: [svg],
   });
-}
-
-function parseSvgIcon(svgMarkup) {
-  const template = document.createElement("template");
-  template.innerHTML = svgMarkup.trim();
-  const firstElement = template.content.firstElementChild;
-  return firstElement instanceof SVGElement ? firstElement : null;
 }
 
 function parseToolbarTemplate(template = "") {

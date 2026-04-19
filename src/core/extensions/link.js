@@ -1,3 +1,4 @@
+import { parseSvgIcon } from "../../helper/html";
 import { createElement } from "../../helper/jsx-runtime";
 import { ListenerRegistry, registerEventListener } from "../../helper/listener";
 import { validateUrl } from "../../helper/sanitizer";
@@ -201,11 +202,4 @@ export class LinkExtension extends LexisExtension {
     this.#popoverEl?.hide();
     this.#urlInput.value = "";
   }
-}
-
-function parseSvgIcon(svgMarkup) {
-  const template = document.createElement("template");
-  template.innerHTML = svgMarkup.trim();
-  const firstElement = template.content.firstElementChild;
-  return firstElement instanceof SVGElement ? firstElement : null;
 }

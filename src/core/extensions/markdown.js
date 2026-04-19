@@ -17,6 +17,7 @@ import {
   UNORDERED_LIST,
 } from "@lexical/markdown";
 import { $createParagraphNode, defineExtension } from "lexical";
+import { $createImageNode, $isImageNode, ImageNode } from "../nodes/image-node";
 import { LexisExtension } from "./extension";
 
 const DIVIDER_REGEX = /^(?:---|\*\*\*|___)\s?$/;
@@ -46,6 +47,48 @@ const DIVIDER = {
   type: "element",
 };
 
+const IMAGE_IMPORT_REGEX =
+  /!\[([^\]]*)\]\(([^\s)]+)(?:\s+"((?:[^"\\]|\\.)*)")?\)/;
+
+const IMAGE = {
+  dependencies: [ImageNode],
+  export: (node) => {
+    if (!$isImageNode(node)) {
+      return null;
+    }
+
+    const alt = escapeMarkdownImageText(node.getAlt());
+    const src = node.getSrc();
+    const title = node.getTitle();
+
+    if (title) {
+      return `![${alt}](${src} "${escapeMarkdownImageText(title)}")`;
+    }
+
+    return `![${alt}](${src})`;
+  },
+  regExp: IMAGE_IMPORT_REGEX,
+  replace: (textNode, match) => {
+    const [, rawAlt = "", src = "", rawTitle] = match;
+    if (!src) {
+      return;
+    }
+
+    const imageNode = $createImageNode({
+      src,
+      alt: unescapeMarkdownImageText(rawAlt),
+      title:
+        typeof rawTitle === "string" && rawTitle.length > 0
+          ? unescapeMarkdownImageText(rawTitle)
+          : null,
+    });
+
+    textNode.replace(imageNode);
+  },
+  trigger: ")",
+  type: "text-match",
+};
+
 export const MARKDOWN_TRANSFORMERS = [
   HEADING,
   QUOTE,
@@ -58,6 +101,7 @@ export const MARKDOWN_TRANSFORMERS = [
   ITALIC_UNDERSCORE,
   STRIKETHROUGH,
   LINK,
+  IMAGE,
 ];
 
 export class MarkdownExtension extends LexisExtension {
@@ -80,4 +124,12 @@ export class MarkdownExtension extends LexisExtension {
       },
     });
   }
+}
+
+function escapeMarkdownImageText(value) {
+  return value.replace(/([\\"\]])/g, "\\$1");
+}
+
+function unescapeMarkdownImageText(value) {
+  return value.replace(/\\([\\"\]])/g, "$1");
 }

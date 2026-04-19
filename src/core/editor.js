@@ -17,6 +17,7 @@ import { sanitizeHtml } from "../helper/sanitizer";
 import { ClipboardExtension } from "./extensions/clipboard";
 import { CodeBlockExtension } from "./extensions/code-block";
 import { LexisExtension } from "./extensions/extension";
+import { ImageExtension } from "./extensions/image";
 import { LinkExtension } from "./extensions/link";
 import {
   MARKDOWN_TRANSFORMERS,
@@ -394,6 +395,7 @@ export class Editor {
     return [
       RichTextExtension,
       LinkExtension,
+      ImageExtension,
       ClipboardExtension,
       CodeBlockExtension,
       MarkdownExtension,
