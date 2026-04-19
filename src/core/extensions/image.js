@@ -1,23 +1,16 @@
 import { $getNearestNodeOfType } from "@lexical/utils";
 import {
   $createNodeSelection,
-  $createParagraphNode,
   $getNearestNodeFromDOMNode,
   $getSelection,
-  $isDecoratorNode,
-  $isElementNode,
   $isNodeSelection,
   $isRangeSelection,
-  $isTextNode,
   $setSelection,
   CLICK_COMMAND,
   COMMAND_PRIORITY_EDITOR,
-  COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
   defineExtension,
   isDOMNode,
-  KEY_ARROW_DOWN_COMMAND,
-  KEY_ARROW_UP_COMMAND,
   mergeRegister,
   SELECTION_CHANGE_COMMAND,
 } from "lexical";
@@ -99,18 +92,6 @@ export class ImageExtension extends LexisExtension {
               return true;
             },
             COMMAND_PRIORITY_LOW,
-          ),
-
-          lexicalEditor.registerCommand(
-            KEY_ARROW_DOWN_COMMAND,
-            (evt) => this.#handleArrowDown(evt),
-            COMMAND_PRIORITY_HIGH,
-          ),
-
-          lexicalEditor.registerCommand(
-            KEY_ARROW_UP_COMMAND,
-            (evt) => this.#handleArrowUp(evt),
-            COMMAND_PRIORITY_HIGH,
           ),
 
           lexicalEditor.registerCommand(
@@ -304,10 +285,6 @@ export class ImageExtension extends LexisExtension {
       registerEventListener(this.#popoverEl, "popover:close", () => {
         this.#srcInput.value = "";
         this.#captionInput.value = "";
-
-        setTimeout(() => {
-          this.editor.lexicalEditor.focus();
-        }, 50);
       }),
     );
   }
@@ -347,93 +324,10 @@ export class ImageExtension extends LexisExtension {
     return firstNode || null;
   }
 
-  #handleArrowDown(evt) {
-    const selection = $getSelection();
-
-    if ($isNodeSelection(selection)) {
-      const imageNode = this.#getSingleSelectedImageNode(selection);
-      if (!imageNode) {
-        return false;
-      }
-
-      let nextSibling = imageNode.getNextSibling();
-      if (!nextSibling) {
-        nextSibling = $createParagraphNode();
-        imageNode.insertAfter(nextSibling);
-      }
-
-      selectNodeStart(nextSibling);
-      evt.preventDefault();
-      return true;
-    }
-
-    if ($isRangeSelection(selection)) {
-      const focusNode = selection.focus.getNode();
-      const parentElement = focusNode.getTopLevelElement();
-      const nextSibling = parentElement.getNextSibling();
-
-      if ($isDecoratorNode(nextSibling)) {
-        const newSelection = $createNodeSelection();
-        newSelection.add(nextSibling.getKey());
-        $setSelection(newSelection);
-        evt.preventDefault();
-        return true;
-      }
-
-      return false;
-    }
-  }
-
-  #handleArrowUp(evt) {
-    const selection = $getSelection();
-
-    if ($isNodeSelection(selection)) {
-      const imageNode = this.#getSingleSelectedImageNode(selection);
-      if (!imageNode) {
-        return false;
-      }
-
-      const previousSibling = imageNode.getPreviousSibling();
-      if (!previousSibling) {
-        return false;
-      }
-
-      selectNodeEnd(previousSibling);
-      evt.preventDefault();
-      return true;
-    }
-
-    if ($isRangeSelection(selection)) {
-      const focusNode = selection.focus.getNode();
-      const parentElement = focusNode.getTopLevelElement();
-      const previousSibling = parentElement.getPreviousSibling();
-
-      if ($isDecoratorNode(previousSibling)) {
-        const newSelection = $createNodeSelection();
-        newSelection.add(previousSibling.getKey());
-        $setSelection(newSelection);
-        evt.preventDefault();
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   #selectImageNode(imageNode) {
     const selection = $createNodeSelection();
     selection.add(imageNode.getKey());
     $setSelection(selection);
-  }
-
-  #getSingleSelectedImageNode(selection) {
-    const nodes = selection.getNodes();
-    if (nodes.length !== 1) {
-      return null;
-    }
-
-    const [node] = nodes;
-    return $isImageNode(node) ? node : null;
   }
 
   #getCurrentSelectedKeys() {
@@ -482,25 +376,4 @@ export class ImageExtension extends LexisExtension {
 
     this.#previouslySelectedKeys = currentKeys;
   }
-}
-
-function selectNodeEnd(node) {
-  let targetNode = node;
-
-  while ($isElementNode(targetNode)) {
-    const lastChild = targetNode.getLastChild();
-    if (!lastChild) {
-      break;
-    }
-
-    targetNode = lastChild;
-  }
-
-  if ($isTextNode(targetNode)) {
-    const size = targetNode.getTextContentSize();
-    targetNode.select(size, size);
-    return;
-  }
-
-  targetNode.selectEnd();
 }
