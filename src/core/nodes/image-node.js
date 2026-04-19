@@ -1,4 +1,9 @@
-import { $applyNodeReplacement, createCommand, DecoratorNode } from "lexical";
+import {
+  $applyNodeReplacement,
+  $getNearestNodeFromDOMNode,
+  createCommand,
+  DecoratorNode,
+} from "lexical";
 
 export const INSERT_IMAGE_COMMAND = createCommand("INSERT_IMAGE_COMMAND");
 
@@ -117,17 +122,14 @@ export class ImageNode extends DecoratorNode {
     }
 
     const caption = document.createElement("figcaption");
+    caption.setAttribute("data-slot", "image-caption");
     caption.textContent = this.__caption;
-
-    if (!this.__caption) {
-      caption.hidden = true;
-    }
 
     figure.append(image, caption);
     return { element: figure };
   }
 
-  createDOM() {
+  createDOM(_config, editor) {
     const figure = document.createElement("figure");
     figure.className = "editor-image";
     figure.dataset.selected = "false";
@@ -143,11 +145,30 @@ export class ImageNode extends DecoratorNode {
     image.draggable = false;
 
     const caption = document.createElement("figcaption");
-    caption.textContent = this.__caption;
+    caption.setAttribute("data-slot", "image-caption");
 
-    if (!this.__caption) {
-      caption.hidden = true;
-    }
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "editor-image-caption-input";
+    input.placeholder = "Add caption...";
+    input.value = this.__caption;
+
+    input.oninput = () => {
+      const captionText = input.value;
+
+      editor.update(() => {
+        const node = $getNearestNodeFromDOMNode(figure);
+        if (!$isImageNode(node)) {
+          return;
+        }
+
+        node.setImagePayload({ caption: captionText });
+      });
+    };
+
+    input.onkeydown = (evt) => evt.stopPropagation();
+
+    caption.append(input);
 
     figure.append(image, caption);
     return figure;
@@ -157,9 +178,11 @@ export class ImageNode extends DecoratorNode {
   updateDOM(prevNode, dom) {
     const image = dom.querySelector("img");
     const caption = dom.querySelector("figcaption");
+    const captionInput = dom.querySelector(".editor-image-caption-input");
     if (
       !(image instanceof HTMLImageElement) ||
-      !(caption instanceof HTMLElement)
+      !(caption instanceof HTMLElement) ||
+      !(captionInput instanceof HTMLInputElement)
     ) {
       return true;
     }
@@ -170,8 +193,7 @@ export class ImageNode extends DecoratorNode {
 
     if (prevNode.__caption !== this.__caption) {
       image.alt = this.__caption || "";
-      caption.textContent = this.__caption;
-      caption.hidden = !this.__caption;
+      captionInput.value = this.__caption;
     }
 
     if (prevNode.__title !== this.__title) {

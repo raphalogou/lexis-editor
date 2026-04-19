@@ -545,6 +545,22 @@ lexis-editor[data-layout="split"] [data-slot="editor-content"],
       font-size: 0.85rem;
       color: var(--lexis-image-caption-fg);
       text-align: center;
+      padding: 0;
+    }
+
+    .editor-image-caption-input {
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: 0.25rem;
+      background: transparent;
+      color: var(--lexis-image-caption-fg);
+      text-align: center;
+      font-size: 0.85rem;
+      padding: 0.15rem 0.25rem;
+
+      &:focus {
+        outline: none;
+      }
     }
 
     &[data-selected="true"] {
