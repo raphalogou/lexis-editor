@@ -4,7 +4,7 @@ export const INSERT_IMAGE_COMMAND = createCommand("INSERT_IMAGE_COMMAND");
 
 /**
  * @typedef {import('lexical').Spread<{
- *  alt: string,
+ *  caption: string,
  *  src: string,
  *  title: string | null,
  * }, import('lexical').SerializedLexicalNode>} SerializedImageNode
@@ -15,21 +15,21 @@ export class ImageNode extends DecoratorNode {
   __src;
 
   /** @type {string} */
-  __alt;
+  __caption;
 
   /** @type {string | null} */
   __title;
 
   /**
    * @param {string} src
-   * @param {string} [alt]
+   * @param {string} [caption]
    * @param {string | null} [title]
    * @param {import('lexical').NodeKey} [key]
    */
-  constructor(src, alt = "", title = null, key) {
+  constructor(src, caption = "", title = null, key) {
     super(key);
     this.__src = src;
-    this.__alt = alt;
+    this.__caption = caption;
     this.__title = title;
   }
 
@@ -39,14 +39,14 @@ export class ImageNode extends DecoratorNode {
 
   /** @param {ImageNode} node */
   static clone(node) {
-    return new ImageNode(node.__src, node.__alt, node.__title, node.__key);
+    return new ImageNode(node.__src, node.__caption, node.__title, node.__key);
   }
 
   /** @param {SerializedImageNode} serializedNode */
   static importJSON(serializedNode) {
     return $createImageNode({
       src: serializedNode.src,
-      alt: serializedNode.alt,
+      caption: serializedNode.caption || serializedNode.alt || "",
       title: serializedNode.title,
     });
   }
@@ -62,12 +62,34 @@ export class ImageNode extends DecoratorNode {
           return {
             node: $createImageNode({
               src: domNode.src,
-              alt: domNode.alt || "",
+              caption: domNode.alt || "",
               title: domNode.title || null,
             }),
           };
         },
         priority: 1,
+      }),
+      figure: () => ({
+        conversion: (domNode) => {
+          if (!(domNode instanceof HTMLElement)) {
+            return null;
+          }
+
+          const image = domNode.querySelector("img");
+          if (!(image instanceof HTMLImageElement) || !image.src) {
+            return null;
+          }
+
+          const figcaption = domNode.querySelector("figcaption");
+          return {
+            node: $createImageNode({
+              src: image.src,
+              caption: figcaption?.textContent?.trim() || image.alt || "",
+              title: image.title || null,
+            }),
+          };
+        },
+        priority: 2,
       }),
     };
   }
@@ -77,52 +99,86 @@ export class ImageNode extends DecoratorNode {
       type: "image",
       version: 1,
       src: this.__src,
-      alt: this.__alt,
+      caption: this.__caption,
       title: this.__title,
     };
   }
 
   exportDOM() {
-    const element = document.createElement("img");
-    element.src = this.__src;
-    element.alt = this.__alt;
+    const figure = document.createElement("figure");
+    figure.className = "editor-image";
+
+    const image = document.createElement("img");
+    image.src = this.__src;
+    image.alt = this.__caption || "";
 
     if (this.__title) {
-      element.title = this.__title;
+      image.title = this.__title;
     }
 
-    return { element };
+    const caption = document.createElement("figcaption");
+    caption.textContent = this.__caption;
+
+    if (!this.__caption) {
+      caption.hidden = true;
+    }
+
+    figure.append(image, caption);
+    return { element: figure };
   }
 
   createDOM() {
+    const figure = document.createElement("figure");
+    figure.className = "editor-image";
+    figure.dataset.selected = "false";
+
     const image = document.createElement("img");
-    image.className = "editor-image";
     image.src = this.__src;
-    image.alt = this.__alt;
+    image.alt = this.__caption || "";
 
     if (this.__title) {
       image.title = this.__title;
     }
 
     image.draggable = false;
-    return image;
+
+    const caption = document.createElement("figcaption");
+    caption.textContent = this.__caption;
+
+    if (!this.__caption) {
+      caption.hidden = true;
+    }
+
+    figure.append(image, caption);
+    return figure;
   }
 
   /** @param {ImageNode} prevNode @param {HTMLElement} dom */
   updateDOM(prevNode, dom) {
-    if (prevNode.__src !== this.__src) {
-      dom.src = this.__src;
+    const image = dom.querySelector("img");
+    const caption = dom.querySelector("figcaption");
+    if (
+      !(image instanceof HTMLImageElement) ||
+      !(caption instanceof HTMLElement)
+    ) {
+      return true;
     }
 
-    if (prevNode.__alt !== this.__alt) {
-      dom.alt = this.__alt;
+    if (prevNode.__src !== this.__src) {
+      image.src = this.__src;
+    }
+
+    if (prevNode.__caption !== this.__caption) {
+      image.alt = this.__caption || "";
+      caption.textContent = this.__caption;
+      caption.hidden = !this.__caption;
     }
 
     if (prevNode.__title !== this.__title) {
       if (this.__title) {
-        dom.title = this.__title;
+        image.title = this.__title;
       } else {
-        dom.removeAttribute("title");
+        image.removeAttribute("title");
       }
     }
 
@@ -131,6 +187,10 @@ export class ImageNode extends DecoratorNode {
 
   isInline() {
     return false;
+  }
+
+  isKeyboardSelectable() {
+    return true;
   }
 
   getTextContent() {
@@ -142,14 +202,19 @@ export class ImageNode extends DecoratorNode {
   }
 
   getAlt() {
-    return this.getLatest().__alt;
+    const caption = this.getLatest().__caption;
+    return caption || "";
+  }
+
+  getCaption() {
+    return this.getLatest().__caption;
   }
 
   getTitle() {
     return this.getLatest().__title;
   }
 
-  /** @param {{src?: string, alt?: string, title?: string | null}} payload */
+  /** @param {{src?: string, caption?: string, title?: string | null}} payload */
   setImagePayload(payload) {
     const writable = this.getWritable();
 
@@ -157,8 +222,8 @@ export class ImageNode extends DecoratorNode {
       writable.__src = payload.src;
     }
 
-    if (typeof payload.alt === "string") {
-      writable.__alt = payload.alt;
+    if (typeof payload.caption === "string") {
+      writable.__caption = payload.caption;
     }
 
     if (payload.title !== undefined) {
@@ -170,11 +235,11 @@ export class ImageNode extends DecoratorNode {
 }
 
 /**
- * @param {{src: string, alt?: string, title?: string | null}} payload
+ * @param {{src: string, caption?: string, title?: string | null}} payload
  */
 export function $createImageNode(payload) {
-  const { src, alt = "", title = null } = payload;
-  return $applyNodeReplacement(new ImageNode(src, alt, title));
+  const { src, caption = "", title = null } = payload;
+  return $applyNodeReplacement(new ImageNode(src, caption, title));
 }
 
 /** @param {import('lexical').LexicalNode | null | undefined} node */

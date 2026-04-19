@@ -57,7 +57,7 @@ const IMAGE = {
       return null;
     }
 
-    const alt = escapeMarkdownImageText(node.getAlt());
+    const alt = escapeMarkdownImageText(node.getCaption());
     const src = node.getSrc();
     const title = node.getTitle();
 
@@ -76,7 +76,7 @@ const IMAGE = {
 
     const imageNode = $createImageNode({
       src,
-      alt: unescapeMarkdownImageText(rawAlt),
+      caption: unescapeMarkdownImageText(rawAlt),
       title:
         typeof rawTitle === "string" && rawTitle.length > 0
           ? unescapeMarkdownImageText(rawTitle)

@@ -1,10 +1,25 @@
 import { $getNearestNodeOfType } from "@lexical/utils";
 import {
+  $createNodeSelection,
+  $createParagraphNode,
+  $getNearestNodeFromDOMNode,
   $getSelection,
+  $isDecoratorNode,
+  $isElementNode,
+  $isNodeSelection,
   $isRangeSelection,
+  $isTextNode,
+  $setSelection,
+  CLICK_COMMAND,
   COMMAND_PRIORITY_EDITOR,
+  COMMAND_PRIORITY_HIGH,
+  COMMAND_PRIORITY_LOW,
   defineExtension,
+  isDOMNode,
+  KEY_ARROW_DOWN_COMMAND,
+  KEY_ARROW_UP_COMMAND,
   mergeRegister,
+  SELECTION_CHANGE_COMMAND,
 } from "lexical";
 import { parseSvgIcon } from "../../helper/html";
 import { createElement } from "../../helper/jsx-runtime";
@@ -36,16 +51,19 @@ export class ImageExtension extends LexisExtension {
   #srcInput = null;
 
   /** @type {HTMLInputElement|null} */
-  #altInput = null;
+  #captionInput = null;
 
   /** @type {import('../../elements/popover').PopoverElement | null} */
   #popoverEl = null;
+
+  /** @type {Set<string>} */
+  #previouslySelectedKeys = new Set();
 
   get lexicalExtension() {
     return defineExtension({
       name: "lexis/image",
       nodes: [ImageNode],
-      register: (lexicalEditor) => {
+      register: (lexicalEditor, _, _state) => {
         return mergeRegister(
           lexicalEditor.registerCommand(
             INSERT_IMAGE_COMMAND,
@@ -55,13 +73,60 @@ export class ImageExtension extends LexisExtension {
               }
 
               lexicalEditor.update(() => {
-                insertImageNodeAtSelection($createImageNode(payload));
+                const imageNode = $createImageNode(payload);
+                insertImageNodeAtSelection(imageNode);
               });
 
               return true;
             },
             COMMAND_PRIORITY_EDITOR,
           ),
+
+          lexicalEditor.registerCommand(
+            CLICK_COMMAND,
+            (event) => {
+              if (!isDOMNode(event.target)) {
+                return false;
+              }
+
+              const targetNode = $getNearestNodeFromDOMNode(event.target);
+              if (!$isImageNode(targetNode)) {
+                return false;
+              }
+
+              this.#selectImageNode(targetNode);
+              this.#syncSelectedClasses(lexicalEditor);
+              return true;
+            },
+            COMMAND_PRIORITY_LOW,
+          ),
+
+          lexicalEditor.registerCommand(
+            KEY_ARROW_DOWN_COMMAND,
+            (evt) => this.#handleArrowDown(evt),
+            COMMAND_PRIORITY_HIGH,
+          ),
+
+          lexicalEditor.registerCommand(
+            KEY_ARROW_UP_COMMAND,
+            (evt) => this.#handleArrowUp(evt),
+            COMMAND_PRIORITY_HIGH,
+          ),
+
+          lexicalEditor.registerCommand(
+            SELECTION_CHANGE_COMMAND,
+            () => {
+              this.#syncSelectedClasses(lexicalEditor);
+              return false;
+            },
+            COMMAND_PRIORITY_EDITOR,
+          ),
+
+          lexicalEditor.registerUpdateListener(() => {
+            lexicalEditor.read(() => {
+              this.#syncSelectedClasses(lexicalEditor);
+            });
+          }),
         );
       },
     });
@@ -91,7 +156,8 @@ export class ImageExtension extends LexisExtension {
 
     this.#popoverEl = null;
     this.#srcInput = null;
-    this.#altInput = null;
+    this.#captionInput = null;
+    this.#previouslySelectedKeys.clear();
     this.element = null;
   }
 
@@ -140,11 +206,11 @@ export class ImageExtension extends LexisExtension {
       required: "true",
     });
 
-    const altInput = createElement("input", {
+    const captionInput = createElement("input", {
       type: "text",
-      id: `lexis-image-alt-${this.#uid}`,
-      name: "alt",
-      placeholder: "Alternative text (optional)",
+      id: `lexis-image-caption-${this.#uid}`,
+      name: "caption",
+      placeholder: "Caption (optional)",
     });
 
     const srcLabel = createElement("label", {
@@ -152,9 +218,9 @@ export class ImageExtension extends LexisExtension {
       children: ["Image URL", srcInput],
     });
 
-    const altLabel = createElement("label", {
-      for: `lexis-image-alt-${this.#uid}`,
-      children: ["Alt text", altInput],
+    const captionLabel = createElement("label", {
+      for: `lexis-image-caption-${this.#uid}`,
+      children: ["Caption", captionInput],
     });
 
     const insertButton = createElement("button", {
@@ -164,17 +230,17 @@ export class ImageExtension extends LexisExtension {
       children: ["Insert"],
     });
 
-    panel.append(srcLabel, altLabel, insertButton);
+    panel.append(srcLabel, captionLabel, insertButton);
     popover.append(trigger, panel);
     return popover;
   }
 
   #initializeElements() {
     this.#srcInput = this.element.querySelector("[name='src']");
-    this.#altInput = this.element.querySelector("[name='alt']");
+    this.#captionInput = this.element.querySelector("[name='caption']");
 
-    if (!this.#srcInput || !this.#altInput) {
-      throw new Error("ImageExtension requires src and alt input elements");
+    if (!this.#srcInput || !this.#captionInput) {
+      throw new Error("ImageExtension requires src and caption input elements");
     }
 
     if (!(this.element instanceof HTMLElement)) {
@@ -204,7 +270,7 @@ export class ImageExtension extends LexisExtension {
         this.#insertImage();
       }),
 
-      registerEventListener(this.#altInput, "keydown", (evt) => {
+      registerEventListener(this.#captionInput, "keydown", (evt) => {
         if (evt.key !== "Enter") {
           return;
         }
@@ -216,34 +282,42 @@ export class ImageExtension extends LexisExtension {
       registerEventListener(this.#popoverEl, "popover:open", () => {
         this.editor.lexicalEditor.read(() => {
           const selection = $getSelection();
-          if (!$isRangeSelection(selection)) {
+          if (!$isRangeSelection(selection) && !$isNodeSelection(selection)) {
             return;
           }
 
-          const node = $getNearestNodeOfType(
-            selection.focus.getNode(),
-            ImageNode,
-          );
+          const focusNode = $isRangeSelection(selection)
+            ? selection.focus.getNode()
+            : this.#getFirstSelectedNode(selection);
+          if (!focusNode) {
+            return;
+          }
+
+          const node = $getNearestNodeOfType(focusNode, ImageNode);
           if ($isImageNode(node)) {
             this.#srcInput.value = node.getSrc();
-            this.#altInput.value = node.getAlt();
+            this.#captionInput.value = node.getCaption();
           }
         });
       }),
 
       registerEventListener(this.#popoverEl, "popover:close", () => {
         this.#srcInput.value = "";
-        this.#altInput.value = "";
+        this.#captionInput.value = "";
+
+        setTimeout(() => {
+          this.editor.lexicalEditor.focus();
+        }, 50);
       }),
     );
   }
 
   #insertImage() {
     const src = this.#srcInput.value.trim();
-    const alt = this.#altInput.value.trim();
+    const caption = this.#captionInput.value.trim();
 
     this.#srcInput.value = src;
-    this.#altInput.value = alt;
+    this.#captionInput.value = caption;
 
     if (!src || !this.#srcInput.checkValidity()) {
       this.#srcInput.reportValidity();
@@ -260,11 +334,173 @@ export class ImageExtension extends LexisExtension {
     this.#srcInput.setCustomValidity("");
     this.editor.runCommand("insert-image", {
       src,
-      alt,
+      caption,
       title: null,
     });
     this.#popoverEl?.hide();
     this.#srcInput.value = "";
-    this.#altInput.value = "";
+    this.#captionInput.value = "";
   }
+
+  #getFirstSelectedNode(selection) {
+    const [firstNode] = Array.from(selection.getNodes());
+    return firstNode || null;
+  }
+
+  #handleArrowDown(evt) {
+    const selection = $getSelection();
+
+    if ($isNodeSelection(selection)) {
+      const imageNode = this.#getSingleSelectedImageNode(selection);
+      if (!imageNode) {
+        return false;
+      }
+
+      let nextSibling = imageNode.getNextSibling();
+      if (!nextSibling) {
+        nextSibling = $createParagraphNode();
+        imageNode.insertAfter(nextSibling);
+      }
+
+      selectNodeStart(nextSibling);
+      evt.preventDefault();
+      return true;
+    }
+
+    if ($isRangeSelection(selection)) {
+      const focusNode = selection.focus.getNode();
+      const parentElement = focusNode.getTopLevelElement();
+      const nextSibling = parentElement.getNextSibling();
+
+      if ($isDecoratorNode(nextSibling)) {
+        const newSelection = $createNodeSelection();
+        newSelection.add(nextSibling.getKey());
+        $setSelection(newSelection);
+        evt.preventDefault();
+        return true;
+      }
+
+      return false;
+    }
+  }
+
+  #handleArrowUp(evt) {
+    const selection = $getSelection();
+
+    if ($isNodeSelection(selection)) {
+      const imageNode = this.#getSingleSelectedImageNode(selection);
+      if (!imageNode) {
+        return false;
+      }
+
+      const previousSibling = imageNode.getPreviousSibling();
+      if (!previousSibling) {
+        return false;
+      }
+
+      selectNodeEnd(previousSibling);
+      evt.preventDefault();
+      return true;
+    }
+
+    if ($isRangeSelection(selection)) {
+      const focusNode = selection.focus.getNode();
+      const parentElement = focusNode.getTopLevelElement();
+      const previousSibling = parentElement.getPreviousSibling();
+
+      if ($isDecoratorNode(previousSibling)) {
+        const newSelection = $createNodeSelection();
+        newSelection.add(previousSibling.getKey());
+        $setSelection(newSelection);
+        evt.preventDefault();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  #selectImageNode(imageNode) {
+    const selection = $createNodeSelection();
+    selection.add(imageNode.getKey());
+    $setSelection(selection);
+  }
+
+  #getSingleSelectedImageNode(selection) {
+    const nodes = selection.getNodes();
+    if (nodes.length !== 1) {
+      return null;
+    }
+
+    const [node] = nodes;
+    return $isImageNode(node) ? node : null;
+  }
+
+  #getCurrentSelectedKeys() {
+    const selection = $getSelection();
+    const keys = new Set();
+
+    if ($isNodeSelection(selection)) {
+      for (const node of selection.getNodes()) {
+        if ($isImageNode(node)) {
+          keys.add(node.getKey());
+        }
+      }
+    }
+
+    return keys;
+  }
+
+  #syncSelectedClasses(lexicalEditor) {
+    const currentKeys = this.#getCurrentSelectedKeys();
+
+    for (const key of this.#previouslySelectedKeys) {
+      if (currentKeys.has(key)) {
+        continue;
+      }
+
+      const domNode = lexicalEditor.getElementByKey(key);
+      if (!domNode) {
+        continue;
+      }
+
+      domNode.dataset.selected = "false";
+    }
+
+    for (const key of currentKeys) {
+      if (this.#previouslySelectedKeys.has(key)) {
+        continue;
+      }
+
+      const domNode = lexicalEditor.getElementByKey(key);
+      if (!domNode) {
+        continue;
+      }
+
+      domNode.dataset.selected = "true";
+    }
+
+    this.#previouslySelectedKeys = currentKeys;
+  }
+}
+
+function selectNodeEnd(node) {
+  let targetNode = node;
+
+  while ($isElementNode(targetNode)) {
+    const lastChild = targetNode.getLastChild();
+    if (!lastChild) {
+      break;
+    }
+
+    targetNode = lastChild;
+  }
+
+  if ($isTextNode(targetNode)) {
+    const size = targetNode.getTextContentSize();
+    targetNode.select(size, size);
+    return;
+  }
+
+  targetNode.selectEnd();
 }

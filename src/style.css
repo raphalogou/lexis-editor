@@ -39,6 +39,8 @@
   --lexis-popover-action-bg: #e7edf8;
   --lexis-popover-action-hover-bg: #d3def1;
   --lexis-popover-action-fg: #0f2552;
+  --lexis-image-selected-outline: #2563eb;
+  --lexis-image-caption-fg: #4b5563;
   --lexis-control-invalid-border: #dc2626;
   --lexis-control-invalid-ring: rgba(220, 38, 38, 0.2);
   --lexis-control-invalid-bg: #fff5f5;
@@ -523,9 +525,32 @@ lexis-editor[data-layout="split"] [data-slot="editor-content"],
   .editor-image {
     display: block;
     max-width: 100%;
-    height: auto;
     margin: 0 0 1em;
     border-radius: 0.35rem;
+    padding: 0.2rem;
+
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border-radius: 0.25rem;
+      inline-size: auto;
+      margin-inline: auto;
+      max-block-size: 32rem;
+      object-fit: contain;
+    }
+
+    figcaption {
+      margin-top: 0.35rem;
+      font-size: 0.85rem;
+      color: var(--lexis-image-caption-fg);
+      text-align: center;
+    }
+
+    &[data-selected="true"] {
+      outline: 2px solid var(--lexis-image-selected-outline);
+      outline-offset: 2px;
+    }
   }
 
   .editor-token-atrule {
