@@ -1,5 +1,7 @@
+import { createElement } from "../../helper/jsx-runtime";
 import { ListenerRegistry, registerEventListener } from "../../helper/listener";
 import { validateUrl } from "../../helper/sanitizer";
+import { COMMAND_ICONS } from "../commands/icons";
 import { $getLinkNode } from "../commands/link";
 import { logger } from "../logger";
 import { LexisExtension } from "./extension";
@@ -10,7 +12,7 @@ export class LinkExtension extends LexisExtension {
   /** @type {HTMLInputElement|null} */
   #urlInput = null;
 
-  /** @type {HTMLElement} */
+  /** @type {import('../../elements/popover').PopoverElement | null} */
   #popoverEl = null;
 
   /** @type {import('../../helper/listener').ListenerRegistry} */
@@ -40,36 +42,72 @@ export class LinkExtension extends LexisExtension {
   }
 
   #buildPopover() {
-    return (
-      <el-popover data-lexis-extension="link">
-        <button
-          type="button"
-          class="lexis-button"
-          command="toggle-popover"
-          commandfor="link-popover"
-          data-lexis-control="link"
-        >
-          Link
-        </button>
+    const popover = createElement("el-popover", {
+      "data-lexis-extension": "link",
+      label: "Link",
+      placement: "bottom",
+      offset: "8",
+    });
 
-        <div id="link-popover" popover="auto">
-          <input
-            type="url"
-            name="url"
-            placeholder="https://"
-            autofocus
-            form="lexis/popover"
-          />
+    const trigger = createElement("button", {
+      type: "button",
+      slot: "trigger",
+      class: "lexis-button lexis-button--icon",
+      "data-lexis-control": "link",
+      "aria-label": "Link",
+      title: "Link",
+    });
 
-          <button type="button" data-command="link" class="lexis-button">
-            Link
-          </button>
-          <button type="button" data-command="unlink" class="lexis-button">
-            Unlink
-          </button>
-        </div>
-      </el-popover>
-    );
+    const triggerIcon = parseSvgIcon(COMMAND_ICONS.link);
+    if (triggerIcon) {
+      triggerIcon.setAttribute("data-slot", "toolbar-icon");
+      triggerIcon.setAttribute("aria-hidden", "true");
+      trigger.append(
+        createElement("span", {
+          "data-slot": "toolbar-icon-wrapper",
+          children: [triggerIcon],
+        }),
+      );
+    } else {
+      trigger.append("Link");
+    }
+
+    const panel = createElement("div", {
+      slot: "panel",
+      class: "lexis-popover-panel lexis-link-popover",
+    });
+
+    const input = createElement("input", {
+      type: "url",
+      name: "url",
+      placeholder: "https://",
+      autofocus: "true",
+      form: "lexis/editor",
+    });
+
+    const linkButton = createElement("button", {
+      type: "button",
+      class: "lexis-button",
+      "data-command": "link",
+      children: ["Link"],
+    });
+
+    const unlinkButton = createElement("button", {
+      type: "button",
+      class: "lexis-button",
+      "data-command": "unlink",
+      children: ["Unlink"],
+    });
+
+    const actions = createElement("div", {
+      class: "lexis-link-popover-actions",
+      children: [linkButton, unlinkButton],
+    });
+
+    panel.append(input, actions);
+    popover.append(trigger, panel);
+
+    return popover;
   }
 
   /**
@@ -82,12 +120,11 @@ export class LinkExtension extends LexisExtension {
       throw new Error("LinkExtension requires an input[name='url'] element");
     }
 
-    this.#popoverEl = this.element.querySelector("[popover]");
-    if (!this.#popoverEl) {
-      throw new Error("LinkExtension requires a [popover] element");
+    if (!(this.element instanceof HTMLElement)) {
+      throw new Error("LinkExtension requires a valid popover host element");
     }
 
-    this.#popoverEl.popover = "auto";
+    this.#popoverEl = this.element;
   }
 
   /**
@@ -113,18 +150,17 @@ export class LinkExtension extends LexisExtension {
     );
 
     this.#listeners.track(
-      registerEventListener(this.#popoverEl, "toggle", (evt) => {
-        if (evt.newState === "open" && this.editor.isActive("link")) {
+      registerEventListener(this.#popoverEl, "popover:open", () => {
+        if (this.editor.isActive("link")) {
           this.editor.lexicalEditor.read(() => {
             const linkNode = $getLinkNode();
             if (linkNode) {
               this.#urlInput.value = linkNode.getURL();
             }
           });
-
-          return;
         }
-
+      }),
+      registerEventListener(this.#popoverEl, "popover:close", () => {
         this.#urlInput.value = "";
       }),
     );
@@ -152,7 +188,7 @@ export class LinkExtension extends LexisExtension {
     }
 
     this.editor.runCommand("link", { url });
-    this.#popoverEl?.hidePopover();
+    this.#popoverEl?.hide();
     this.#urlInput.value = "";
   }
 
@@ -162,7 +198,14 @@ export class LinkExtension extends LexisExtension {
    */
   #removeLink() {
     this.editor.runCommand("unlink");
-    this.#popoverEl?.hidePopover();
+    this.#popoverEl?.hide();
     this.#urlInput.value = "";
   }
+}
+
+function parseSvgIcon(svgMarkup) {
+  const template = document.createElement("template");
+  template.innerHTML = svgMarkup.trim();
+  const firstElement = template.content.firstElementChild;
+  return firstElement instanceof SVGElement ? firstElement : null;
 }

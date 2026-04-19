@@ -21,7 +21,7 @@ export class LexisEditorElement extends HTMLElement {
     lexical: {},
     toolbar: {
       template:
-        "bold italic underline code | format divider code-block | number-list bullet-list | link ~ undo redo",
+        "bold italic underline code | format | link | number-list bullet-list code-block divider ~ undo redo",
       groups: {
         format: ["paragraph", "heading-2", "heading-3", "heading-4", "quote"],
       },
