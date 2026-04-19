@@ -314,6 +314,7 @@ export class ImageExtension extends LexisExtension {
       caption,
       title: null,
     });
+
     this.#popoverEl?.hide();
     this.#srcInput.value = "";
     this.#captionInput.value = "";
