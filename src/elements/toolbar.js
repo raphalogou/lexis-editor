@@ -204,7 +204,7 @@ export class LexisToolbarElement extends HTMLElement {
 
       if (activeCommand) {
         select.value = activeCommand;
-      } else if (!select.value && commands.length > 0) {
+      } else if (commands.length > 0) {
         const firstEnabled = commands.find(
           (id) => !this.#editor.isDisabled(id),
         );

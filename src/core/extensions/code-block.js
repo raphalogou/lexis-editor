@@ -18,6 +18,7 @@ import {
   $isLineBreakNode,
   $isRangeSelection,
   $isTabNode,
+  $isTextNode,
   COMMAND_PRIORITY_EDITOR,
   createCommand,
   defineExtension,
@@ -187,7 +188,7 @@ export class CodeBlockExtension extends LexisExtension {
    */
   #handleArrowDownInCodeBlock() {
     const selection = $getSelection();
-    if (!$isRangeSelection(selection)) {
+    if (!this.#isInsideCodeBlock() || !$isRangeSelection(selection)) {
       return false;
     }
 
@@ -211,23 +212,19 @@ export class CodeBlockExtension extends LexisExtension {
         return false;
       }
     } else {
-      if (!isCodeLineAnchorNode(focusNode)) {
-        return false;
-      }
-
-      const lineEndNode = $getLastCodeNodeOfLine(focusNode);
-      if (lineEndNode.getKey() !== lastLineNode.getKey()) {
+      const lineEndNode = getCodeLineEndNode(focusNode, codeBlockNode);
+      if (lineEndNode?.getKey() !== lastLineNode.getKey()) {
         return false;
       }
     }
 
     let nextSibling = codeBlockNode.getNextSibling();
+
     if (!nextSibling) {
       nextSibling = $createParagraphNode();
       codeBlockNode.insertAfter(nextSibling);
     }
 
-    nextSibling.selectStart();
     return true;
   }
 
@@ -377,6 +374,45 @@ export class CodeBlockExtension extends LexisExtension {
 
 function isCodeLineAnchorNode(node) {
   return (
-    $isCodeHighlightNode(node) || $isTabNode(node) || $isLineBreakNode(node)
+    $isCodeHighlightNode(node) ||
+    $isTabNode(node) ||
+    $isLineBreakNode(node) ||
+    $isTextNode(node)
   );
+}
+
+function getCodeLineEndNode(node, codeBlockNode) {
+  if (isCodeLineAnchorNode(node)) {
+    return $getLastCodeNodeOfLine(node);
+  }
+
+  const directChild = getDirectChildWithinAncestor(node, codeBlockNode);
+  if (!directChild) {
+    return null;
+  }
+
+  if (isCodeLineAnchorNode(directChild)) {
+    return $getLastCodeNodeOfLine(directChild);
+  }
+
+  return directChild;
+}
+
+function getDirectChildWithinAncestor(node, ancestor) {
+  let currentNode = node;
+
+  while (currentNode) {
+    const parent = currentNode.getParent();
+    if (!parent) {
+      return null;
+    }
+
+    if (parent.getKey() === ancestor.getKey()) {
+      return currentNode;
+    }
+
+    currentNode = parent;
+  }
+
+  return null;
 }
