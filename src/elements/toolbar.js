@@ -31,6 +31,10 @@ export class LexisToolbarElement extends HTMLElement {
       registerEventListener(this, "click", this.dispatchCommandEvent),
       registerEventListener(this, "editor:command", this.handleEditorCommand),
     );
+
+    for (const ctrl of this.querySelectorAll("input, select")) {
+      ctrl.setAttribute("form", "lexis/editor/toolbar");
+    }
   }
 
   /**

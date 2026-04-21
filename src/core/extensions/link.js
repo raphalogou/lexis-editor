@@ -14,7 +14,7 @@ export class LinkExtension extends LexisExtension {
   #urlInput = null;
 
   /** @type {import('../../elements/popover').PopoverElement | null} */
-  #popoverEl = null;
+  element = null;
 
   /** @type {import('../../helper/listener').ListenerRegistry} */
   #listeners = new ListenerRegistry();
@@ -37,7 +37,6 @@ export class LinkExtension extends LexisExtension {
   dispose() {
     this.#listeners.cleanup();
 
-    this.#popoverEl = null;
     this.#urlInput = null;
     this.element = null;
   }
@@ -75,7 +74,6 @@ export class LinkExtension extends LexisExtension {
 
     const panel = createElement("div", {
       slot: "panel",
-      class: "lexis-popover-panel lexis-link-popover",
     });
 
     const input = createElement("input", {
@@ -83,7 +81,6 @@ export class LinkExtension extends LexisExtension {
       name: "url",
       placeholder: "https://",
       autofocus: "true",
-      form: "lexis/editor",
     });
 
     const linkButton = createElement("button", {
@@ -101,7 +98,7 @@ export class LinkExtension extends LexisExtension {
     });
 
     const actions = createElement("div", {
-      class: "lexis-link-popover-actions",
+      class: "lexis-popover-actions",
       children: [linkButton, unlinkButton],
     });
 
@@ -124,8 +121,6 @@ export class LinkExtension extends LexisExtension {
     if (!(this.element instanceof HTMLElement)) {
       throw new Error("LinkExtension requires a valid popover host element");
     }
-
-    this.#popoverEl = this.element;
   }
 
   /**
@@ -151,7 +146,7 @@ export class LinkExtension extends LexisExtension {
     );
 
     this.#listeners.track(
-      registerEventListener(this.#popoverEl, "popover:open", () => {
+      registerEventListener(this.element, "popover:open", () => {
         if (this.editor.isActive("link")) {
           this.editor.lexicalEditor.read(() => {
             const linkNode = $getLinkNode();
@@ -161,8 +156,9 @@ export class LinkExtension extends LexisExtension {
           });
         }
       }),
-      registerEventListener(this.#popoverEl, "popover:close", () => {
+      registerEventListener(this.element, "popover:close", () => {
         this.#urlInput.value = "";
+        this.#urlInput.setCustomValidity("");
       }),
     );
   }
@@ -189,7 +185,7 @@ export class LinkExtension extends LexisExtension {
     }
 
     this.editor.runCommand("link", { url });
-    this.#popoverEl?.hide();
+    this.element?.hide();
     this.#urlInput.value = "";
   }
 
@@ -199,7 +195,7 @@ export class LinkExtension extends LexisExtension {
    */
   #removeLink() {
     this.editor.runCommand("unlink");
-    this.#popoverEl?.hide();
+    this.element?.hide();
     this.#urlInput.value = "";
   }
 }

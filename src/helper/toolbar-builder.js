@@ -182,15 +182,11 @@ function createToolbarIcon(icon, label) {
 
   svg.setAttribute("data-slot", "toolbar-icon");
   svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("title", label);
   svg.removeAttribute("aria-label");
   svg.removeAttribute("role");
 
-  return createElement("span", {
-    "data-slot": "toolbar-icon-wrapper",
-    title: label,
-    "aria-label": label,
-    children: [svg],
-  });
+  return svg;
 }
 
 function parseToolbarTemplate(template = "") {
