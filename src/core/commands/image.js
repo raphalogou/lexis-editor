@@ -1,10 +1,9 @@
 import {
-  $createNodeSelection,
+  $createParagraphNode,
   $getSelection,
   $insertNodes,
   $isNodeSelection,
   $isRangeSelection,
-  $setSelection,
 } from "lexical";
 import { INSERT_IMAGE_COMMAND } from "../nodes/image-node";
 import { COMMAND_ICONS } from "./icons";
@@ -48,8 +47,14 @@ export function insertImageNodeAtSelection(imageNode) {
   selectInsertedImageNode(imageNode);
 }
 
+/**
+ *
+ * @param {import('../nodes/image-node').ImageNode} imageNode
+ */
 function selectInsertedImageNode(imageNode) {
-  const nodeSelection = $createNodeSelection();
-  nodeSelection.add(imageNode.getKey());
-  $setSelection(nodeSelection);
+  if (!imageNode.getNextSibling()) {
+    imageNode.insertAfter($createParagraphNode());
+  }
+
+  imageNode.selectNext(0, 0);
 }

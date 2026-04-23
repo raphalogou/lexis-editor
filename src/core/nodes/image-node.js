@@ -1,8 +1,8 @@
 import {
   $applyNodeReplacement,
-  $getNearestNodeFromDOMNode,
   createCommand,
   DecoratorNode,
+  HISTORY_MERGE_TAG,
 } from "lexical";
 
 export const INSERT_IMAGE_COMMAND = createCommand("INSERT_IMAGE_COMMAND");
@@ -153,24 +153,30 @@ export class ImageNode extends DecoratorNode {
     input.placeholder = "Add caption...";
     input.value = this.__caption;
 
-    input.oninput = () => {
-      const captionText = input.value;
-
-      editor.update(() => {
-        const node = $getNearestNodeFromDOMNode(figure);
-        if (!$isImageNode(node)) {
-          return;
-        }
-
-        node.setImagePayload({ caption: captionText });
-      });
+    input.onblur = () => {
+      editor.update(() => (this.getWritable().__caption = input.value.trim()));
     };
 
-    input.onkeydown = (evt) => evt.stopPropagation();
+    input.onkeydown = (evt) => {
+      evt.stopPropagation();
+
+      console.log(evt.key);
+      if (!["Enter", "Escape"].includes(evt.key)) {
+        return;
+      }
+
+      evt.target.blur();
+      editor.update(
+        () => {
+          this.selectNext(0, 0);
+        },
+        { tag: HISTORY_MERGE_TAG },
+      );
+    };
 
     caption.append(input);
-
     figure.append(image, caption);
+
     return figure;
   }
 
