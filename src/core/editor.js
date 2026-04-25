@@ -14,16 +14,16 @@ import {
 } from "lexical";
 import { ListenerRegistry } from "../helper/listener";
 import { sanitizeHtml } from "../helper/sanitizer";
-import { ClipboardExtension } from "./extensions/clipboard";
-import { CodeBlockExtension } from "./extensions/code-block";
-import { LexisExtension } from "./extensions/extension";
-import { ImageExtension } from "./extensions/image";
-import { LinkExtension } from "./extensions/link";
 import {
-  MARKDOWN_TRANSFORMERS,
+  ClipboardExtension,
+  CodeBlockExtension,
+  ImageExtension,
+  LexisExtension,
+  LinkExtension,
   MarkdownExtension,
-} from "./extensions/markdown";
-import { RichTextExtension } from "./extensions/rich-text";
+  RichTextExtension,
+} from "./extensions";
+import { MARKDOWN_TRANSFORMERS } from "./extensions/markdown";
 import { logger } from "./logger";
 
 /**

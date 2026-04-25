@@ -203,7 +203,7 @@ export class ImageExtension extends LexisExtension {
     }
 
     return (
-      <el-popover
+      <xui-popover
         data-lexis-extension="image"
         label="Insert image"
         placement="bottom-start"
@@ -314,7 +314,7 @@ export class ImageExtension extends LexisExtension {
             */}
           </div>
         </div>
-      </el-popover>
+      </xui-popover>
     );
   }
 

@@ -3,6 +3,18 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs.js",
+  "module": "./dist/index.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js"
+    },
+    "./lexis.css": "./dist/style.css"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

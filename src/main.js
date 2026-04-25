@@ -1,19 +1,7 @@
 import "./style.css";
 
-import { logger } from "./core/logger";
-import {
-  LexisEditorElement,
-  LexisToolbarElement,
-  PopoverElement,
-  ProgressElement,
-} from "./elements";
-
-setTimeout(() => {
-  customElements.define("ui-progress", ProgressElement);
-  customElements.define("el-popover", PopoverElement);
-  customElements.define("lexis-toolbar", LexisToolbarElement);
-  customElements.define("lexis-editor", LexisEditorElement);
-}, 0);
+import { logger } from "../dist/index.es";
+import "../dist/style.css";
 
 document
   .querySelector("lexis-editor")

@@ -2,8 +2,6 @@
 @import "sanitize.css/forms.css";
 @import "sanitize.css/typography.css";
 
-@import "styles/index.css";
-
 .container {
   width: 100%;
   max-width: min(90vw, 1080px);

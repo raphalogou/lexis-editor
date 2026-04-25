@@ -41,7 +41,7 @@ export class LinkExtension extends LexisExtension {
   }
 
   #buildPopover() {
-    const popover = createElement("el-popover", {
+    const popover = createElement("xui-popover", {
       "data-lexis-extension": "link",
       label: "Link",
       placement: "bottom",

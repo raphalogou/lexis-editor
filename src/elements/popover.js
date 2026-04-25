@@ -12,9 +12,9 @@ export class PopoverElement extends HTMLElement {
 
   #listeners = new ListenerRegistry();
 
-  #popoverId = `el-popover-panel-${createShortId()}`;
+  #popoverId = `xui-popover-panel-${createShortId()}`;
 
-  #anchorName = `--el-popover-anchor-${createShortId()}`;
+  #anchorName = `--xui-popover-anchor-${createShortId()}`;
 
   /** @type {HTMLElement | null} */
   #trigger = null;

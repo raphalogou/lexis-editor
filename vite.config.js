@@ -1,4 +1,4 @@
-import path from "node:path";
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -12,7 +12,15 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "jsx-runtime": path.resolve(__dirname, "src/helper"),
+      "jsx-runtime": resolve(import.meta.dirname, "src/helper"),
+    },
+  },
+  build: {
+    lib: {
+      entry: resolve(import.meta.dirname, "src/index.js"),
+      formats: ["es", "cjs"],
+      fileName: (format, entryName) => `${entryName}.${format}.js`,
+      cssFileName: "style",
     },
   },
 });

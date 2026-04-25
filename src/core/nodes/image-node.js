@@ -213,7 +213,7 @@ export class ImageNode extends DecoratorNode {
         h("div", {
           "data-slot": "upload-progress",
           children: [
-            h("ui-progress", {
+            h("xui-progress", {
               "data-slot": "progress-bar",
               value: 0,
               contentEditable: false,
