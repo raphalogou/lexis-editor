@@ -5,9 +5,11 @@ import {
   LexisEditorElement,
   LexisToolbarElement,
   PopoverElement,
+  ProgressElement,
 } from "./elements";
 
 setTimeout(() => {
+  customElements.define("ui-progress", ProgressElement);
   customElements.define("el-popover", PopoverElement);
   customElements.define("lexis-toolbar", LexisToolbarElement);
   customElements.define("lexis-editor", LexisEditorElement);
@@ -29,6 +31,26 @@ document
     });
   });
 
-document.addEventListener("editor:ready", (event) => {
-  logger.debug("Editor ready", event.detail);
+document.addEventListener("editor:image:insert", (event) => {
+  logger.debug("Insert image", event.detail);
+  // event.preventDefault();
+});
+
+document.addEventListener("editor:image:upload", (event) => {
+  logger.debug("Upload image", event.detail);
+
+  const { file, upload } = event.detail;
+
+  console.log(file, upload);
+
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += 10;
+    upload.progress(progress);
+
+    if (progress === 100) {
+      clearInterval(interval);
+      upload.success({ url: URL.createObjectURL(file) });
+    }
+  }, 1000);
 });

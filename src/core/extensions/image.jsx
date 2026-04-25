@@ -1,6 +1,7 @@
 import {
   $createNodeSelection,
   $getNearestNodeFromDOMNode,
+  $getRoot,
   $getSelection,
   $isNodeSelection,
   $setSelection,
@@ -24,6 +25,7 @@ import { logger } from "../logger";
 import {
   $createImageNode,
   $isImageNode,
+  IMAGE_SOURCE,
   ImageNode,
   INSERT_IMAGE_COMMAND,
 } from "../nodes/image-node";
@@ -48,7 +50,7 @@ export class ImageExtension extends LexisExtension {
   #listeners = new ListenerRegistry();
 
   /** @type {HTMLInputElement|null} */
-  #srcInput = null;
+  #urlInput = null;
 
   /** @type {HTMLInputElement|null} */
   #fileInput = null;
@@ -59,6 +61,9 @@ export class ImageExtension extends LexisExtension {
   /** @type {Set<string>} */
   #previouslySelectedKeys = new Set();
 
+  /** @type {ImageNode|null} */
+  #lastInsertedNode = null;
+
   get lexicalExtension() {
     return defineExtension({
       name: "lexis/image",
@@ -68,13 +73,14 @@ export class ImageExtension extends LexisExtension {
           lexicalEditor.registerCommand(
             INSERT_IMAGE_COMMAND,
             (payload) => {
-              if (!payload || typeof payload.src !== "string") {
+              if (!payload || typeof payload.url !== "string") {
                 return false;
               }
 
               lexicalEditor.update(() => {
                 const imageNode = $createImageNode(payload);
                 insertImageNodeAtSelection(imageNode);
+                this.#lastInsertedNode = imageNode;
               });
 
               return true;
@@ -145,7 +151,7 @@ export class ImageExtension extends LexisExtension {
     this.#listeners.cleanup();
 
     this.#popoverEl = null;
-    this.#srcInput = null;
+    this.#urlInput = null;
     this.#fileInput = null;
     this.#previouslySelectedKeys.clear();
     this.element = null;
@@ -220,7 +226,7 @@ export class ImageExtension extends LexisExtension {
                 Description
                 <input
                   type="text"
-                  name="caption"
+                  name="description"
                   placeholder="Description (optional)"
                 />
               </label>
@@ -246,7 +252,7 @@ export class ImageExtension extends LexisExtension {
                 Description
                 <input
                   type="text"
-                  name="caption"
+                  name="description"
                   placeholder="Description (optional)"
                 />
               </label>
@@ -277,10 +283,10 @@ export class ImageExtension extends LexisExtension {
   }
 
   #initializeElements() {
-    this.#srcInput = this.element.querySelector("[name='url']");
+    this.#urlInput = this.element.querySelector("[name='url']");
     this.#fileInput = this.element.querySelector("[name='file']");
 
-    if (!this.#srcInput || !this.#fileInput) {
+    if (!this.#urlInput || !this.#fileInput) {
       throw new Error("ImageExtension requires src and file input elements");
     }
 
@@ -309,7 +315,6 @@ export class ImageExtension extends LexisExtension {
 
         // Handle insert image action
         const targetButton = target.closest("[type='button'][data-action]");
-
         if (targetButton?.getAttribute("data-action") !== "insert-image") {
           return;
         }
@@ -317,7 +322,7 @@ export class ImageExtension extends LexisExtension {
         this.#insertImage();
       }),
 
-      // Upload caption Enter key
+      // Upload description Enter key
       registerEventListener(this.#popoverEl, "keydown", (evt) => {
         if (evt.key !== "Enter") {
           return;
@@ -337,22 +342,30 @@ export class ImageExtension extends LexisExtension {
       }),
 
       registerEventListener(this.element, "popover:close", () => {
-        this.#srcInput.value = "";
+        this.#urlInput.value = "";
         this.#fileInput.value = "";
 
-        // Reset all caption inputs
+        // Reset all description inputs
         this.#popoverEl
-          .querySelectorAll('input[name="caption"]')
+          .querySelectorAll('input[name="description"]')
           .forEach((input) => {
             input.value = "";
           });
 
         // Clear validation errors
-        this.#srcInput.setCustomValidity("");
+        this.#urlInput.setCustomValidity("");
         this.#fileInput.setCustomValidity("");
 
         // Reset to Upload File tab
         this.#resetToFirstTab();
+
+        requestAnimationFrame(() => {
+          this.editor.lexicalEditor.update(() => {
+            const rootNode = $getRoot();
+            const lastChild = rootNode.getLastChild() ?? rootNode;
+            lastChild?.selectEnd();
+          });
+        });
       }),
     );
   }
@@ -426,39 +439,84 @@ export class ImageExtension extends LexisExtension {
       return;
     }
 
-    this.#insertImageWithData({ src: URL.createObjectURL(file) });
+    // We're about to insert an image file. Let's notify the consumer
+    const event = new CustomEvent("editor:image:insert", {
+      bubbles: true,
+      cancelable: true,
+      detail: { file },
+    });
+    this.hostElement.dispatchEvent(event);
+
+    if (event.defaultPrevented) {
+      // Don't proceed to image insertion if default is `preventDefault` was called and hide the popover
+      logger.debug("Image inserted cancelled");
+      this.element.hide();
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    this.#insertImageWithData({ url: previewUrl, source: IMAGE_SOURCE.FILE });
+
+    // Proceed with file upload
+    this.hostElement.dispatchEvent(
+      new CustomEvent("editor:image:upload", {
+        bubbles: true,
+        detail: {
+          file,
+          upload: {
+            success: ({ url }) => {
+              if (!this.#lastInsertedNode) {
+                return;
+              }
+
+              this.editor.lexicalEditor.update(() => {
+                this.#lastInsertedNode.setImagePayload({ url });
+              });
+
+              URL.revokeObjectURL(previewUrl);
+            },
+            progress: (progress) => {
+              this.editor.lexicalEditor.update(() => {
+                this.#lastInsertedNode.updateProgress(progress);
+              });
+            },
+            error: ({ _code, _message }) => {},
+          },
+        },
+      }),
+    );
   }
 
   #insertImageFromUrl() {
-    const src = this.#srcInput.value.trim();
-    this.#srcInput.value = src;
+    const url = this.#urlInput.value.trim();
+    this.#urlInput.value = url;
 
-    if (!src || !this.#srcInput.checkValidity()) {
-      this.#srcInput.reportValidity();
+    if (!url || !this.#urlInput.checkValidity()) {
+      this.#urlInput.reportValidity();
       return;
     }
 
-    if (!validateUrl(src)) {
-      this.#srcInput.setCustomValidity("Invalid image URL format or protocol");
-      this.#srcInput.reportValidity();
-      logger.debug(`Invalid image URL provided: ${src}`);
+    if (!validateUrl(url)) {
+      this.#urlInput.setCustomValidity("Invalid image URL format or protocol");
+      this.#urlInput.reportValidity();
+      logger.debug(`Invalid image URL provided: ${url}`);
       return;
     }
 
-    this.#srcInput.setCustomValidity("");
-    this.#insertImageWithData({ src });
+    this.#urlInput.setCustomValidity("");
+    this.#insertImageWithData({ url, source: IMAGE_SOURCE.URL });
   }
 
-  #insertImageWithData({ src }) {
-    const captionInput = this.#activeTabPanel.querySelector(
-      'input[name="caption"]',
+  #insertImageWithData({ url, source }) {
+    const descriptionInput = this.#activeTabPanel.querySelector(
+      'input[name="description"]',
     );
-    const caption = captionInput?.value.trim() || "";
+    const description = descriptionInput?.value.trim() || "";
 
     this.editor.runCommand("insert-image", {
-      src,
-      caption,
-      title: null,
+      url,
+      description,
+      source,
     });
 
     this.element?.hide();
