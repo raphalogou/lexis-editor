@@ -1,10 +1,11 @@
 import {
   $applyNodeReplacement,
-  $getEditor,
   createCommand,
   DecoratorNode,
   HISTORY_MERGE_TAG,
 } from "lexical";
+import { h, parseSvgIcon } from "../../helper/html";
+import { UI_ICONS } from "../commands/icons";
 
 export const INSERT_IMAGE_COMMAND = createCommand("INSERT_IMAGE_COMMAND");
 
@@ -21,9 +22,9 @@ export const IMAGE_SOURCE = {
 
 /**
  * @typedef {import('lexical').Spread<{
- *  caption: string,
- *  src: string,
- *  title: string | null,
+ *  description: string,
+ *  url: string,
+ *  upload: {status: string, progress: number, error: string|null},
  * }, import('lexical').SerializedLexicalNode>} SerializedImageNode
  */
 
@@ -59,8 +60,6 @@ export class ImageNode extends DecoratorNode {
       progress: 0,
       error: null,
     };
-
-    this.editor = $getEditor();
   }
 
   static getType() {
@@ -78,15 +77,27 @@ export class ImageNode extends DecoratorNode {
       node.__key,
     );
 
+    cloned.__upload = { ...node.__upload };
+
     return cloned;
   }
 
   /** @param {SerializedImageNode} serializedNode */
   static importJSON(serializedNode) {
-    return $createImageNode({
+    const newNode = $createImageNode({
       url: serializedNode.url,
       description: serializedNode.description || "",
     });
+
+    newNode.__upload = serializedNode.upload
+      ? { ...serializedNode.upload }
+      : {
+          status: UPLOAD_STATUS.IDLE,
+          progress: 0,
+          error: null,
+        };
+
+    return newNode;
   }
 
   static importDOM() {
@@ -136,6 +147,7 @@ export class ImageNode extends DecoratorNode {
       version: 1,
       url: this.__url,
       description: this.__description,
+      upload: this.__upload,
     };
   }
 
@@ -160,88 +172,90 @@ export class ImageNode extends DecoratorNode {
   }
 
   createDOM(_config, editor) {
-    const figure = document.createElement("figure");
-    figure.className = "editor-image";
-    figure.dataset.selected = "false";
-    if (this.__upload.status !== UPLOAD_STATUS.IDLE) {
-      figure.dataset.uploadStatus = this.__upload.status;
-    }
-
-    const image = document.createElement("img");
-    image.src = this.__url;
-    image.alt = this.__description || "";
-
-    if (this.__description) {
-      image.title = this.__description;
-    }
-
-    image.draggable = false;
+    const image = h("img", {
+      src: this.__url,
+      alt: this.__description,
+      title: this.__description ?? undefined,
+      draggable: false,
+    });
 
     // Let's build the overlay
-    const overlay = document.createElement("div");
-    overlay.className = "editor-image-overlay";
+    const overlay = h("div", {
+      class: "editor-image-overlay",
+      children: [
+        h("div", {
+          "data-slot": "upload-progress",
+          children: [
+            h("ui-progress", {
+              "data-slot": "progress-bar",
+              value: 0,
+              contentEditable: false,
+            }),
+          ],
+        }),
+        h("div", {
+          "data-slot": "upload-error",
+          children: [
+            parseSvgIcon(UI_ICONS.error, {
+              "data-slot": "error-icon",
+              width: "36px",
+              size: "36px",
+            }),
+            h("div", {
+              children: [
+                h("div", {
+                  "data-slot": "error-title",
+                  children: ["Upload failed"],
+                }),
+                h("div", { "data-slot": "error-message" }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    });
 
-    const progressSlot = document.createElement("div");
-    progressSlot.setAttribute("data-slot", "upload-progress");
+    const input = h("input", {
+      type: "text",
+      class: "editor-image-caption-input",
+      placeholder: "Add a caption...",
+      value: this.__description,
+      onBlur: () => {
+        editor.update(
+          () => (this.getWritable().__description = input.value.trim()),
+        );
+      },
+      onKeyDown: (evt) => {
+        evt.stopPropagation();
 
-    /** @type {import("../../elements/progress").ProgressElement} */
-    const progressBar = document.createElement("ui-progress");
-    progressBar.setAttribute("data-slot", "progress-bar");
-    progressBar.value = 0;
-    progressBar.contentEditable = false;
+        if (!["Enter", "Escape"].includes(evt.key)) {
+          return;
+        }
 
-    progressSlot.append(progressBar);
+        evt.target.blur();
+        editor.update(
+          () => {
+            this.selectNext(0, 0);
+          },
+          { tag: HISTORY_MERGE_TAG },
+        );
+      },
+    });
 
-    const errorSlot = document.createElement("div");
-    errorSlot.setAttribute("data-slot", "upload-error");
+    const caption = h("figcaption", {
+      "data-slot": "image-caption",
+      children: [input],
+    });
 
-    const errorMessage = document.createElement("p");
-    errorMessage.setAttribute("data-slot", "error-message");
-
-    const retryButton = document.createElement("button");
-    retryButton.type = "button";
-    retryButton.textContent = "Retry";
-
-    errorSlot.append(errorMessage, retryButton);
-
-    overlay.append(progressSlot, errorSlot);
-
-    // Let's build the caption element
-    const caption = document.createElement("figcaption");
-    caption.setAttribute("data-slot", "image-caption");
-
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = "editor-image-caption-input";
-    input.placeholder = "Add caption...";
-    input.value = this.__description;
-
-    input.onblur = () => {
-      editor.update(
-        () => (this.getWritable().__description = input.value.trim()),
-      );
-    };
-
-    input.onkeydown = (evt) => {
-      evt.stopPropagation();
-
-      if (!["Enter", "Escape"].includes(evt.key)) {
-        return;
-      }
-
-      evt.target.blur();
-      editor.update(
-        () => {
-          this.selectNext(0, 0);
-        },
-        { tag: HISTORY_MERGE_TAG },
-      );
-    };
-
-    caption.append(input);
-    figure.append(image, overlay, caption);
-
-    return figure;
+    return h("figure", {
+      class: "editor-image",
+      "data-selected": "false",
+      "data-upload-status":
+        this.__upload.status !== UPLOAD_STATUS.IDLE
+          ? this.__upload.status
+          : undefined,
+      children: [image, overlay, caption],
+    });
   }
 
   /** @param {ImageNode} prevNode @param {HTMLElement} dom */
@@ -271,15 +285,24 @@ export class ImageNode extends DecoratorNode {
     }
 
     // Handle upload status
-    if (this.__upload.status !== UPLOAD_STATUS.IDLE) {
-      dom.setAttribute("data-upload-status", this.__upload.status);
+    const uploadStatus = this.__upload.status ?? UPLOAD_STATUS.IDLE;
+    if (uploadStatus !== UPLOAD_STATUS.IDLE) {
+      dom.setAttribute("data-upload-status", uploadStatus);
     } else {
       dom.removeAttribute("data-upload-status");
+      return false;
     }
 
-    const progressBar = dom.querySelector("ui-progress");
-    if (progressBar) {
-      progressBar.value = this.__upload.progress;
+    if (uploadStatus === UPLOAD_STATUS.ERROR) {
+      const errorMessage = dom.querySelector("[data-slot='error-message']");
+      if (errorMessage) {
+        errorMessage.textContent = this.__upload.error;
+      }
+    } else {
+      const progressBar = dom.querySelector("ui-progress");
+      if (progressBar) {
+        progressBar.value = this.__upload.progress;
+      }
     }
 
     return false;

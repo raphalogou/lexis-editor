@@ -1,5 +1,4 @@
-import { parseSvgIcon } from "../../helper/html";
-import { createElement } from "../../helper/jsx-runtime";
+import { createElement, parseSvgIcon } from "../../helper/html";
 import { ListenerRegistry, registerEventListener } from "../../helper/listener";
 import { validateUrl } from "../../helper/sanitizer";
 import { COMMAND_ICONS } from "../commands/icons";

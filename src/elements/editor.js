@@ -1,6 +1,6 @@
 import { commands } from "../core/commands";
 import { Editor } from "../core/editor";
-import { createElement } from "../helper/jsx-runtime";
+import { createElement } from "../helper/html";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
 import { LexisToolbarElement } from "./toolbar";
 

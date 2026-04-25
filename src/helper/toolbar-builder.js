@@ -1,5 +1,4 @@
-import { parseSvgIcon } from "./html";
-import { createElement } from "./jsx-runtime";
+import { createElement, parseSvgIcon } from "./html";
 
 export class ToolbarTemplateBuilder {
   constructor({

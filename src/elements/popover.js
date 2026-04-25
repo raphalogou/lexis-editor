@@ -1,4 +1,4 @@
-import { createElement } from "../helper/jsx-runtime";
+import { createElement } from "../helper/html";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
 
 const DEFAULT_LABEL = "Open popover";

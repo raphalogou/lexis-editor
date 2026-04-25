@@ -35,22 +35,23 @@ export class ProgressElement extends HTMLElement {
         display: inline-block;
         width: var(--size, 80px);
         height: var(--size, 80px);
+        pointer-events: none;
       }
-      
+
       div {
         display: grid;
         width: 100%;
         height: 100%;
       }
-      
+
       svg, .label {
         grid-area: 1 / 1;
       }
-      
+
       svg {
         transform: rotate(-90deg);
       }
-      
+
       .label {
         display: flex;
         align-items: center;
@@ -61,12 +62,12 @@ export class ProgressElement extends HTMLElement {
         color: var(--accent-color, white);
         font-family: var(--font-family, monospace);
       }
-      
+
       circle.progress {
         transition: stroke-dashoffset 0.3s ease;
         stroke: var(--accent-color, white);
       }
-      
+
       circle.track {
         stroke: var(--track-color, rgba(255, 255, 255, 0.15));
       }

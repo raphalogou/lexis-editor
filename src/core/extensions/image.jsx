@@ -28,6 +28,7 @@ import {
   IMAGE_SOURCE,
   ImageNode,
   INSERT_IMAGE_COMMAND,
+  UPLOAD_STATUS,
 } from "../nodes/image-node";
 import { LexisExtension } from "./extension";
 
@@ -480,7 +481,15 @@ export class ImageExtension extends LexisExtension {
                 this.#lastInsertedNode.updateProgress(progress);
               });
             },
-            error: ({ _code, _message }) => {},
+            error: ({ _code, message }) => {
+              this.editor.lexicalEditor.update(() => {
+                this.#lastInsertedNode.setUploadStatus({
+                  status: UPLOAD_STATUS.ERROR,
+                  progress: 0,
+                  error: message,
+                });
+              });
+            },
           },
         },
       }),
