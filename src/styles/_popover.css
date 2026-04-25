@@ -1,0 +1,112 @@
+:root {
+  [data-slot="popover-panel"],
+  .lexis-popover-panel {
+    width: 24rem;
+    margin: 0;
+    border: 1px solid var(--lexis-popover-border);
+    border-radius: var(--lexis-popover-radius);
+    background: var(--lexis-popover-bg);
+    color: var(--lexis-popover-fg);
+    box-shadow: var(--lexis-popover-shadow);
+    padding: var(--lexis-popover-padding);
+    font-size: 0.85rem;
+  }
+
+  [data-slot="popover-panel"] label,
+  .lexis-popover-panel label {
+    display: flex;
+    gap: 1rem;
+  }
+
+  [data-slot="popover-panel"] input,
+  [data-slot="popover-panel"] select,
+  [data-slot="popover-panel"] textarea,
+  .lexis-popover-panel input,
+  .lexis-popover-panel select,
+  .lexis-popover-panel textarea {
+    width: 100%;
+    display: block;
+    border: 1px solid var(--lexis-control-border);
+    border-radius: var(--lexis-toolbar-control-radius);
+    padding: var(--lexis-popover-input-padding);
+    background: var(--lexis-popover-input-bg);
+    color: var(--lexis-popover-input-fg);
+    font-size: inherit;
+
+    &:invalid {
+      background: var(--lexis-invalid-bg);
+      box-shadow: inset 0 0 0 1px var(--lexis-invalid-border);
+    }
+
+    &:invalid:focus {
+      outline-color: var(--lexis-invalid-ring);
+    }
+  }
+
+  [data-slot="popover-panel"] input[type="file"] {
+    overflow: hidden;
+    cursor: pointer;
+
+    &::file-selector-button {
+      display: none;
+    }
+  }
+
+  [data-slot="popover-panel"] input::placeholder,
+  [data-slot="popover-panel"] textarea::placeholder,
+  .lexis-popover-panel input::placeholder,
+  .lexis-popover-panel textarea::placeholder {
+    color: var(--lexis-popover-input-placeholder);
+  }
+
+  [data-slot="popover-panel"] input:focus,
+  [data-slot="popover-panel"] select:focus,
+  [data-slot="popover-panel"] textarea:focus,
+  .lexis-popover-panel input:focus,
+  .lexis-popover-panel select:focus,
+  .lexis-popover-panel textarea:focus {
+    outline: 2px solid var(--lexis-control-focus-ring);
+    outline-offset: -1px;
+  }
+
+  [data-slot="popover-panel"]:popover-open,
+  .lexis-popover-panel:popover-open {
+    display: grid;
+    gap: var(--lexis-popover-gap);
+  }
+
+  .lexis-popover-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--lexis-popover-gap);
+  }
+
+  [data-slot="popover-panel"] {
+    & .lexis-button {
+      border: 1px solid var(--lexis-popover-control-border);
+      background: var(--lexis-popover-control-active-bg);
+      color: var(--lexis-popover-control-active-fg);
+      font-weight: 500;
+    }
+
+    & .lexis-button:not(:disabled):hover {
+      background: var(--lexis-popover-control-hover-bg);
+      color: var(--lexis-popover-control-hover-fg);
+      border-color: var(--lexis-popover-control-border);
+    }
+
+    & .lexis-button[value="cancel"] {
+      border-color: var(--lexis-popover-control-cancel-border);
+      background: var(--lexis-popover-control-cancel-bg);
+      color: var(--lexis-popover-control-cancel-fg);
+    }
+
+    & .lexis-button[value="cancel"]:not(:disabled):hover {
+      border-color: var(--lexis-popover-control-cancel-border);
+      background: var(--lexis-popover-control-cancel-hover-bg);
+      color: var(--lexis-popover-control-cancel-hover-fg);
+    }
+  }
+}

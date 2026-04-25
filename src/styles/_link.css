@@ -1,0 +1,35 @@
+:root {
+  .link-popover-panel:popover-open {
+    display: flex;
+    padding: 0.35rem;
+  }
+
+  [data-slot="link-popover-actions"] {
+    display: flex;
+    gap: 0.25rem;
+
+    & .lexis-button {
+      border-color: transparent;
+      background: transparent;
+      color: var(--lexis-accent);
+    }
+
+    & .lexis-button:not(:disabled):hover {
+      color: var(--lexis-accent);
+      background: color-mix(in oklch, var(--lexis-accent), white 80%);
+      border-color: transparent;
+    }
+
+    & .lexis-button[value="cancel"] {
+      border-color: transparent;
+      background: transparent;
+      color: var(--lexis-accent);
+    }
+
+    & .lexis-button[value="cancel"]:not(:disabled):hover {
+      color: var(--lexis-accent);
+      background: color-mix(in oklch, var(--lexis-accent), white 80%);
+      border-color: transparent;
+    }
+  }
+}

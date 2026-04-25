@@ -73,13 +73,14 @@ export class LinkExtension extends LexisExtension {
 
     const panel = createElement("div", {
       slot: "panel",
+      class: "link-popover-panel",
     });
 
     const input = createElement("input", {
       type: "url",
       name: "url",
       placeholder: "https://",
-      autofocus: "true",
+      autofocus: "",
     });
 
     const linkButton = createElement("button", {
@@ -92,12 +93,13 @@ export class LinkExtension extends LexisExtension {
     const unlinkButton = createElement("button", {
       type: "button",
       class: "lexis-button",
+      value: "cancel",
       "data-command": "unlink",
       children: ["Unlink"],
     });
 
     const actions = createElement("div", {
-      class: "lexis-popover-actions",
+      "data-slot": "link-popover-actions",
       children: [linkButton, unlinkButton],
     });
 

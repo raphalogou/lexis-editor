@@ -1,0 +1,208 @@
+:root {
+  .lexis-content {
+    font-size: 16px;
+    padding: 0.65em 1em;
+    min-width: 0;
+
+    h1,
+    .h1,
+    h2,
+    .h2,
+    h3,
+    .h3,
+    h4,
+    .h4 {
+      margin: 0 0 0.5rem;
+    }
+
+    p,
+    ul,
+    ol {
+      margin: 0 0 0.5rem;
+    }
+
+    li {
+      &:has(> ul),
+      &:has(> ol) {
+        list-style: none;
+      }
+    }
+
+    blockquote,
+    .quote {
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      padding-left: 0.75rem;
+      border-left: 3px solid slategray;
+      color: #666;
+      font-style: italic;
+    }
+
+    .font-bold {
+      font-weight: 600;
+    }
+
+    .underline {
+      text-decoration: underline;
+    }
+
+    .italic {
+      font-style: italic;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--lexis-divider-color);
+      margin: 0.8rem 0;
+
+      &.selected {
+        outline: 2px solid var(--lexis-divider-selected-color);
+        outline-offset: 2px;
+      }
+    }
+
+    .inline-code,
+    .code-block {
+      background: var(--lexis-inline-code-bg);
+      color: var(--lexis-inline-code-fg);
+      font-size: 94%;
+      padding: 2px 0.25rem;
+      border-radius: 6px;
+    }
+
+    .code-block {
+      background: var(--lexis-code-bg);
+      color: var(--lexis-code-fg);
+      border: 1px solid var(--lexis-code-border);
+      padding: 1ch;
+      display: block;
+      max-width: 100%;
+      min-width: 0;
+      tab-size: 2;
+      white-space: pre;
+      overflow-x: auto;
+      overflow-y: hidden;
+      margin-block: 0 1em;
+    }
+
+    .editor-token-atrule {
+      color: var(--lexis-token-atrule);
+    }
+
+    .editor-token-attr {
+      color: var(--lexis-token-attr);
+    }
+
+    .editor-token-boolean {
+      color: var(--lexis-token-boolean);
+    }
+
+    .editor-token-builtin {
+      color: var(--lexis-token-builtin);
+    }
+
+    .editor-token-cdata {
+      color: var(--lexis-token-cdata);
+    }
+
+    .editor-token-char {
+      color: var(--lexis-token-char);
+    }
+
+    .editor-token-class {
+      color: var(--lexis-token-class);
+    }
+
+    .editor-token-class-name {
+      color: var(--lexis-token-class-name);
+    }
+
+    .editor-token-comment {
+      color: var(--lexis-token-comment);
+    }
+
+    .editor-token-constant {
+      color: var(--lexis-token-constant);
+    }
+
+    .editor-token-deleted {
+      color: var(--lexis-token-deleted);
+    }
+
+    .editor-token-doctype {
+      color: var(--lexis-token-doctype);
+    }
+
+    .editor-token-entity {
+      color: var(--lexis-token-entity);
+    }
+
+    .editor-token-function {
+      color: var(--lexis-token-function);
+    }
+
+    .editor-token-important {
+      color: var(--lexis-token-important);
+    }
+
+    .editor-token-inserted {
+      color: var(--lexis-token-inserted);
+    }
+
+    .editor-token-keyword {
+      color: var(--lexis-token-keyword);
+    }
+
+    .editor-token-namespace {
+      color: var(--lexis-token-namespace);
+    }
+
+    .editor-token-number {
+      color: var(--lexis-token-number);
+    }
+
+    .editor-token-operator {
+      color: var(--lexis-token-operator);
+    }
+
+    .editor-token-prolog {
+      color: var(--lexis-token-prolog);
+    }
+
+    .editor-token-property {
+      color: var(--lexis-token-property);
+    }
+
+    .editor-token-punctuation {
+      color: var(--lexis-token-punctuation);
+    }
+
+    .editor-token-regex {
+      color: var(--lexis-token-regex);
+    }
+
+    .editor-token-selector {
+      color: var(--lexis-token-selector);
+    }
+
+    .editor-token-string {
+      color: var(--lexis-token-string);
+    }
+
+    .editor-token-symbol {
+      color: var(--lexis-token-symbol);
+    }
+
+    .editor-token-tag {
+      color: var(--lexis-token-tag);
+    }
+
+    .editor-token-url {
+      color: var(--lexis-token-url);
+    }
+
+    .editor-token-variable {
+      color: var(--lexis-token-variable);
+    }
+  }
+}

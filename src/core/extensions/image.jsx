@@ -298,17 +298,20 @@ export class ImageExtension extends LexisExtension {
               class="lexis-button"
               data-action="insert-image"
             >
-              Insert
+              Confirm
             </button>
 
+            {/*
             <button
               type="button"
               class="lexis-button"
               command="hide-popover"
               commandfor={`popover-panel-${uid}`}
+              value="cancel"
             >
               Cancel
-            </button>
+              </button>
+            */}
           </div>
         </div>
       </el-popover>

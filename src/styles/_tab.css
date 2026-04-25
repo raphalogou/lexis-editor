@@ -1,0 +1,60 @@
+:root {
+  /* Tab group styling */
+  .lexis-tab-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--lexis-control-border);
+  }
+
+  .lexis-tab-button {
+    padding: 0.4rem 0.8rem;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border-bottom: 2px solid transparent;
+    transition:
+      all 0.15s ease,
+      border-color 0.15s ease;
+    color: var(--lexis-popover-fg);
+    font-weight: normal;
+
+    &:hover {
+      color: var(--lexis-toolbar-control-active-fg);
+    }
+
+    &[aria-selected="true"] {
+      border-bottom-color: var(--lexis-toolbar-control-active-fg);
+      color: var(--lexis-toolbar-control-active-fg);
+    }
+
+    &[aria-selected="false"] {
+      color: var(--lexis-popover-fg);
+    }
+  }
+
+  /* Tab panel styling */
+  [role="tabpanel"] {
+    display: none;
+    grid-template-columns: max-content minmax(14rem, 1fr);
+    gap: var(--lexis-popover-gap);
+  }
+
+  [role="tabpanel"][aria-hidden="false"] {
+    display: grid;
+  }
+
+  [role="tabpanel"] label {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: center;
+    font-size: 0.85rem;
+    column-gap: var(--lexis-popover-gap);
+  }
+
+  [role="tabpanel"] > button {
+    grid-column: 1 / -1;
+  }
+}
