@@ -41,16 +41,18 @@ document.addEventListener("editor:image:upload", (event) => {
 
   const { file, upload } = event.detail;
 
-  console.log(file, upload);
-
   let progress = 0;
-  const interval = setInterval(() => {
-    progress += 10;
+  const timer = window.setInterval(() => {
+    progress = Math.min(progress + 20, 100);
     upload.progress(progress);
 
-    if (progress === 100) {
-      clearInterval(interval);
-      upload.success({ url: URL.createObjectURL(file) });
+    if (progress < 100) {
+      return;
     }
-  }, 1000);
+
+    window.clearInterval(timer);
+    upload.success({
+      url: `https://picsum.photos/seed/${encodeURIComponent(file.name)}/1200/800`,
+    });
+  }, 160);
 });

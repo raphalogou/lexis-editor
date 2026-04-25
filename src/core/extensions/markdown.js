@@ -57,30 +57,21 @@ const IMAGE = {
       return null;
     }
 
-    const alt = escapeMarkdownImageText(node.getCaption());
-    const src = node.getSrc();
-    const title = node.getTitle();
+    const description = escapeMarkdownImageText(node.getDescription());
+    const url = node.getUrl();
 
-    if (title) {
-      return `![${alt}](${src} "${escapeMarkdownImageText(title)}")`;
-    }
-
-    return `![${alt}](${src})`;
+    return `![${description}](${url} "${description}")`;
   },
   regExp: IMAGE_IMPORT_REGEX,
   replace: (textNode, match) => {
-    const [, rawAlt = "", src = "", rawTitle] = match;
-    if (!src) {
+    const [, rawAlt = "", rawUrl = ""] = match;
+    if (!rawUrl) {
       return;
     }
 
     const imageNode = $createImageNode({
-      src,
-      caption: unescapeMarkdownImageText(rawAlt),
-      title:
-        typeof rawTitle === "string" && rawTitle.length > 0
-          ? unescapeMarkdownImageText(rawTitle)
-          : null,
+      url: rawUrl,
+      description: unescapeMarkdownImageText(rawAlt),
     });
 
     textNode.replace(imageNode);

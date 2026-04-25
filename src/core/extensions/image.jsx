@@ -1,6 +1,7 @@
 import {
   $createNodeSelection,
   $getNearestNodeFromDOMNode,
+  $getNodeByKey,
   $getRoot,
   $getSelection,
   $isNodeSelection,
@@ -65,6 +66,9 @@ export class ImageExtension extends LexisExtension {
   /** @type {ImageNode|null} */
   #lastInsertedNode = null;
 
+  /** @type {Map<string, {file: File, blobUrl: string}>} */
+  #fileEntriesByNodeKey = new Map();
+
   get lexicalExtension() {
     return defineExtension({
       name: "lexis/image",
@@ -122,6 +126,20 @@ export class ImageExtension extends LexisExtension {
               this.#syncSelectedStates(lexicalEditor);
             });
           }),
+
+          lexicalEditor.registerMutationListener(
+            ImageNode,
+            (mutations) => {
+              for (const [nodeKey, mutation] of mutations) {
+                if (mutation !== "destroyed") {
+                  continue;
+                }
+
+                this.#releaseNodeFileEntry(nodeKey);
+              }
+            },
+            { skipInitialization: true },
+          ),
         );
       },
     });
@@ -151,11 +169,25 @@ export class ImageExtension extends LexisExtension {
   dispose() {
     this.#listeners.cleanup();
 
+    for (const nodeKey of this.#fileEntriesByNodeKey.keys()) {
+      this.#releaseNodeFileEntry(nodeKey);
+    }
+
     this.#popoverEl = null;
     this.#urlInput = null;
     this.#fileInput = null;
     this.#previouslySelectedKeys.clear();
     this.element = null;
+  }
+
+  #releaseNodeFileEntry(nodeKey) {
+    const entry = this.#fileEntriesByNodeKey.get(nodeKey);
+    if (!entry) {
+      return;
+    }
+
+    URL.revokeObjectURL(entry.blobUrl);
+    this.#fileEntriesByNodeKey.delete(nodeKey);
   }
 
   #buildPopover() {
@@ -434,6 +466,8 @@ export class ImageExtension extends LexisExtension {
   }
 
   #insertImageFromFile() {
+    this.#fileInput.setCustomValidity("");
+
     const file = this.#fileInput.files[0] || null;
     if (!file || !this.#fileInput.checkValidity()) {
       this.#fileInput.reportValidity();
@@ -458,6 +492,14 @@ export class ImageExtension extends LexisExtension {
     const previewUrl = URL.createObjectURL(file);
     this.#insertImageWithData({ url: previewUrl, source: IMAGE_SOURCE.FILE });
 
+    const insertedNodeKey = this.#lastInsertedNode?.getKey() || null;
+    if (insertedNodeKey) {
+      this.#fileEntriesByNodeKey.set(insertedNodeKey, {
+        file,
+        blobUrl: previewUrl,
+      });
+    }
+
     // Proceed with file upload
     this.hostElement.dispatchEvent(
       new CustomEvent("editor:image:upload", {
@@ -466,24 +508,55 @@ export class ImageExtension extends LexisExtension {
           file,
           upload: {
             success: ({ url }) => {
-              if (!this.#lastInsertedNode) {
+              if (!insertedNodeKey) {
                 return;
               }
 
               this.editor.lexicalEditor.update(() => {
-                this.#lastInsertedNode.setImagePayload({ url });
+                const node = $getNodeByKey(insertedNodeKey);
+                if (!$isImageNode(node)) {
+                  return;
+                }
+
+                node.setImagePayload({
+                  url,
+                  source: IMAGE_SOURCE.URL,
+                });
+                node.setUploadStatus({
+                  status: UPLOAD_STATUS.IDLE,
+                  progress: 100,
+                  error: null,
+                });
               });
 
-              URL.revokeObjectURL(previewUrl);
+              this.#releaseNodeFileEntry(insertedNodeKey);
             },
             progress: (progress) => {
+              if (!insertedNodeKey) {
+                return;
+              }
+
               this.editor.lexicalEditor.update(() => {
-                this.#lastInsertedNode.updateProgress(progress);
+                const node = $getNodeByKey(insertedNodeKey);
+                if (!$isImageNode(node)) {
+                  return;
+                }
+
+                node.updateProgress(progress);
               });
             },
             error: ({ _code, message }) => {
+              if (!insertedNodeKey) {
+                return;
+              }
+
               this.editor.lexicalEditor.update(() => {
-                this.#lastInsertedNode.setUploadStatus({
+                const node = $getNodeByKey(insertedNodeKey);
+                if (!$isImageNode(node)) {
+                  return;
+                }
+
+                node.setUploadStatus({
                   status: UPLOAD_STATUS.ERROR,
                   progress: 0,
                   error: message,
@@ -499,6 +572,7 @@ export class ImageExtension extends LexisExtension {
   #insertImageFromUrl() {
     const url = this.#urlInput.value.trim();
     this.#urlInput.value = url;
+    this.#urlInput.setCustomValidity("");
 
     if (!url || !this.#urlInput.checkValidity()) {
       this.#urlInput.reportValidity();

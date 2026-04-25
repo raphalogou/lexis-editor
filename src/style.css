@@ -3,6 +3,26 @@
 @import "sanitize.css/typography.css";
 
 :root {
+  --lexis-accent: oklch(51.1% 0.262 276.966);
+
+  --lexis-control-hover-bg: color-mix(in oklch, var(--lexis-accent), white 88%);
+  --lexis-control-active-bg: color-mix(
+    in oklch,
+    var(--lexis-accent),
+    white 84%
+  );
+  --lexis-control-active-fg: color-mix(
+    in oklch,
+    var(--lexis-accent),
+    black 45%
+  );
+  --lexis-control-border: color-mix(in oklch, var(--lexis-accent), white 78%);
+  --lexis-control-focus-ring: color-mix(
+    in oklch,
+    var(--lexis-accent),
+    transparent 72%
+  );
+
   --lexis-toolbar-bg: #f4f6fb;
   --lexis-toolbar-fg: #2f3340;
   --lexis-toolbar-border: #d9deea;
@@ -13,9 +33,9 @@
   --lexis-toolbar-control-size: 2.25rem;
   --lexis-toolbar-control-radius: 0.35rem;
   --lexis-toolbar-select-min-width: 14ch;
-  --lexis-toolbar-control-hover-bg: #dbe3f1;
-  --lexis-toolbar-control-active-bg: #dce7ff;
-  --lexis-toolbar-control-active-fg: #15306b;
+  --lexis-toolbar-control-hover-bg: var(--lexis-control-hover-bg);
+  --lexis-toolbar-control-active-bg: var(--lexis-control-active-bg);
+  --lexis-toolbar-control-active-fg: var(--lexis-control-active-fg);
   --lexis-toolbar-control-disabled-opacity: 0.42;
   --lexis-toolbar-separator: #cdd3e2;
 
@@ -23,7 +43,7 @@
   --lexis-editor-border: #d9deea;
   --lexis-editor-divider: #e3e8f2;
   --lexis-editor-radius: 0.45rem;
-  --lexis-editor-focus-ring: rgba(59, 130, 246, 0.2);
+  --lexis-focus-ring: var(--lexis-control-focus-ring);
 
   --lexis-popover-bg: var(--lexis-toolbar-bg);
   --lexis-popover-fg: var(--lexis-toolbar-fg);
@@ -35,15 +55,26 @@
   --lexis-popover-input-bg: #ffffff;
   --lexis-popover-input-fg: #1f2937;
   --lexis-popover-input-placeholder: #6b7280;
-  --lexis-popover-input-border: #c8d1e4;
-  --lexis-popover-action-bg: #e7edf8;
-  --lexis-popover-action-hover-bg: #d3def1;
-  --lexis-popover-action-fg: #0f2552;
-  --lexis-image-selected-outline: #2563eb;
+  --lexis-popover-control-hover-bg: color-mix(
+    in oklch,
+    var(--lexis-accent),
+    white 90%
+  );
+  --lexis-popover-control-active-bg: color-mix(
+    in oklch,
+    var(--lexis-accent),
+    white 86%
+  );
+  --lexis-popover-control-active-fg: color-mix(
+    in oklch,
+    var(--lexis-accent),
+    black 50%
+  );
+  --lexis-selected-outline: color-mix(in oklch, var(--lexis-accent), black 10%);
   --lexis-image-caption-fg: #4b5563;
-  --lexis-control-invalid-border: #dc2626;
-  --lexis-control-invalid-ring: rgba(220, 38, 38, 0.2);
-  --lexis-control-invalid-bg: #fff5f5;
+  --lexis-invalid-border: #dc2626;
+  --lexis-invalid-ring: rgba(220, 38, 38, 0.2);
+  --lexis-invalid-bg: #fff5f5;
 }
 
 :root,
@@ -266,12 +297,12 @@ lexis-toolbar[data-size="sm"],
   }
 
   &:invalid {
-    background-color: var(--lexis-control-invalid-bg);
-    box-shadow: inset 0 0 0 1px var(--lexis-control-invalid-border);
+    background-color: var(--lexis-invalid-bg);
+    box-shadow: inset 0 0 0 1px var(--lexis-invalid-border);
   }
 
   &:focus-visible:invalid {
-    outline: 2px solid var(--lexis-control-invalid-ring);
+    outline: 2px solid var(--lexis-invalid-ring);
     outline-offset: 1px;
   }
 }
@@ -304,6 +335,7 @@ lexis-toolbar[data-size="sm"] .lexis-select,
   transition:
     background-color 0.15s ease,
     color 0.15s ease;
+  cursor: pointer;
 
   &:not(:disabled):hover,
   &[data-state="active"],
@@ -384,19 +416,19 @@ lexis-toolbar[data-size="sm"] [data-slot="toolbar-icon"],
 .lexis-popover-panel textarea {
   width: 100%;
   min-height: var(--lexis-toolbar-control-size);
-  border: 1px solid var(--lexis-popover-input-border);
+  border: 1px solid var(--lexis-control-border);
   border-radius: var(--lexis-toolbar-control-radius);
   padding: 0.35rem 0.45rem;
   background: var(--lexis-popover-input-bg);
   color: var(--lexis-popover-input-fg);
 
   &:invalid {
-    background: var(--lexis-control-invalid-bg);
-    box-shadow: inset 0 0 0 1px var(--lexis-control-invalid-border);
+    background: var(--lexis-invalid-bg);
+    box-shadow: inset 0 0 0 1px var(--lexis-invalid-border);
   }
 
   &:invalid:focus {
-    outline-color: var(--lexis-control-invalid-ring);
+    outline-color: var(--lexis-invalid-ring);
   }
 }
 
@@ -431,13 +463,13 @@ lexis-toolbar[data-size="sm"] [data-slot="toolbar-icon"],
 
   & :where(.lexis-button) {
     flex: 1;
-    background: var(--lexis-popover-action-bg);
-    color: var(--lexis-popover-action-fg);
+    background: var(--lexis-popover-control-active-bg);
+    color: var(--lexis-popover-control-active-fg);
   }
 
   & :where(.lexis-button:not(:disabled):hover),
   & :where(.lexis-button[data-state="active"]) {
-    background: var(--lexis-popover-action-hover-bg);
+    background: var(--lexis-popover-control-hover-bg);
   }
 }
 
@@ -446,7 +478,7 @@ lexis-toolbar[data-size="sm"] [data-slot="toolbar-icon"],
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--lexis-popover-input-border);
+  border-bottom: 1px solid var(--lexis-control-border);
 }
 
 .lexis-tab-button {
@@ -659,7 +691,7 @@ lexis-editor[data-layout="split"] [data-slot="editor-content"],
     }
 
     &[data-selected="true"] {
-      outline: 2px solid var(--lexis-image-selected-outline);
+      outline: 2px solid var(--lexis-selected-outline);
       outline-offset: 2px;
     }
 

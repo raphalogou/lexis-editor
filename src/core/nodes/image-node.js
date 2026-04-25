@@ -24,6 +24,7 @@ export const IMAGE_SOURCE = {
  * @typedef {import('lexical').Spread<{
  *  description: string,
  *  url: string,
+ *  source: string,
  *  upload: {status: string, progress: number, error: string|null},
  * }, import('lexical').SerializedLexicalNode>} SerializedImageNode
  */
@@ -36,7 +37,7 @@ export class ImageNode extends DecoratorNode {
   __description;
 
   /** @type {string | null} */
-  __source = null; // url | upload
+  __source = null; // url | file
 
   /** @type {{status: string, progress: number, error: string|null}} */
   __upload = null;
@@ -84,18 +85,43 @@ export class ImageNode extends DecoratorNode {
 
   /** @param {SerializedImageNode} serializedNode */
   static importJSON(serializedNode) {
+    const source =
+      serializedNode.source === IMAGE_SOURCE.FILE
+        ? IMAGE_SOURCE.FILE
+        : IMAGE_SOURCE.URL;
+
+    const upload =
+      serializedNode.upload && typeof serializedNode.upload === "object"
+        ? serializedNode.upload
+        : null;
+
+    const status =
+      upload?.status === UPLOAD_STATUS.ERROR ||
+      upload?.status === UPLOAD_STATUS.UPLOADING ||
+      upload?.status === UPLOAD_STATUS.IDLE
+        ? upload.status
+        : source === IMAGE_SOURCE.FILE
+          ? UPLOAD_STATUS.UPLOADING
+          : UPLOAD_STATUS.IDLE;
+
+    const progress =
+      typeof upload?.progress === "number" && Number.isFinite(upload.progress)
+        ? Math.max(0, Math.min(100, upload.progress))
+        : 0;
+
+    const error = typeof upload?.error === "string" ? upload.error : null;
+
     const newNode = $createImageNode({
       url: serializedNode.url,
       description: serializedNode.description || "",
+      source,
     });
 
-    newNode.__upload = serializedNode.upload
-      ? { ...serializedNode.upload }
-      : {
-          status: UPLOAD_STATUS.IDLE,
-          progress: 0,
-          error: null,
-        };
+    newNode.__upload = {
+      status,
+      progress,
+      error,
+    };
 
     return newNode;
   }
@@ -147,6 +173,7 @@ export class ImageNode extends DecoratorNode {
       version: 1,
       url: this.__url,
       description: this.__description,
+      source: this.__source,
       upload: this.__upload,
     };
   }
@@ -277,6 +304,7 @@ export class ImageNode extends DecoratorNode {
 
     if (prevNode.__description !== this.__description) {
       image.alt = this.__description || "";
+      image.title = this.__description || "";
       captionInput.value = this.__description;
 
       if (!this.__description) {
@@ -329,7 +357,7 @@ export class ImageNode extends DecoratorNode {
     return caption || "";
   }
 
-  /** @param {{url?: string, description?: string|null}} payload */
+  /** @param {{url?: string, description?: string|null, source?: string|null}} payload */
   setImagePayload(payload) {
     const writable = this.getWritable();
 
@@ -339,6 +367,13 @@ export class ImageNode extends DecoratorNode {
 
     if (typeof payload.description === "string") {
       writable.__description = payload.description;
+    }
+
+    if (
+      payload.source === IMAGE_SOURCE.URL ||
+      payload.source === IMAGE_SOURCE.FILE
+    ) {
+      writable.__source = payload.source;
     }
 
     return writable;
