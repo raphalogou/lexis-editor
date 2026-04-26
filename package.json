@@ -1,19 +1,23 @@
 {
-  "name": "lexis-editor",
-  "version": "0.0.0",
+  "name": "@void/lexis-editor",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "files": [
     "dist"
   ],
-  "main": "./dist/index.cjs.js",
-  "module": "./dist/index.es.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.esm.js",
   "exports": {
     ".": {
-      "import": "./dist/index.es.js",
-      "require": "./dist/index.cjs.js"
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs"
     },
-    "./lexis.css": "./dist/style.css"
+    "./core": {
+      "import": "./dist/core.esm.js",
+      "require": "./dist/core.cjs"
+    },
+    "./lexis-editor.css": "./dist/lexis-editor.css"
   },
   "scripts": {
     "dev": "vite",

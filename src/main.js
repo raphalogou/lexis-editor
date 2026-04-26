@@ -1,7 +1,6 @@
 import "./style.css";
 
-import { logger } from "../dist/index.es";
-import "../dist/style.css";
+import "./styles/index.css";
 
 document
   .querySelector("lexis-editor")
@@ -20,12 +19,12 @@ document
   });
 
 document.addEventListener("editor:image:insert", (event) => {
-  logger.debug("Insert image", event.detail);
+  console.debug("Insert image", event.detail);
   // event.preventDefault();
 });
 
 document.addEventListener("editor:image:upload", (event) => {
-  logger.debug("Upload image", event.detail);
+  console.debug("Upload image", event.detail);
 
   const { file, upload } = event.detail;
 

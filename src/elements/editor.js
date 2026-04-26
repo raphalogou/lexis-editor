@@ -1,5 +1,6 @@
 import { commands } from "../core/commands";
-import { Editor } from "../core/editor";
+import { Editor as CoreEditor } from "../editor/core";
+import { Editor as DefaultEditor } from "../editor/default";
 import { createElement } from "../helper/html";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
 import { LexisToolbarElement } from "./toolbar";
@@ -11,7 +12,7 @@ export class LexisEditorElement extends HTMLElement {
    * extensions: Array<typeof import('../core/extensions/extension').LexisExtension>,
    * extensionMode: 'append' | 'replace',
    * lexical: { namespace?: string, theme?: Record<string, any> },
-   * toolbar: { template: string, groups: Record<string, string[]> }
+   * toolbar: { template?: string, groups?: Record<string, string[]> }
    * }}
    */
   static defaultConfig = {
@@ -19,13 +20,7 @@ export class LexisEditorElement extends HTMLElement {
     extensions: [],
     extensionMode: "append",
     lexical: {},
-    toolbar: {
-      template:
-        "bold italic underline code | format | link image | number-list bullet-list code-block divider ~ undo redo",
-      groups: {
-        format: ["paragraph", "heading-2", "heading-3", "heading-4", "quote"],
-      },
-    },
+    toolbar: {},
   };
 
   /** @type {import('../core/editor').Editor} */
@@ -52,13 +47,16 @@ export class LexisEditorElement extends HTMLElement {
   /** @type {import('../helper/listener').ListenerRegistry} */
   #listeners = new ListenerRegistry();
 
+  /** @type {"simple" | "default" } */
+  #preset = "default";
+
   /**
    * @type {import('./toolbar').LexisToolbarElement}
    */
   toolbar = null;
 
   static formAssociated = true;
-  static observedAttributes = ["placeholder", "required"];
+  static observedAttributes = ["placeholder", "required", "preset"];
 
   constructor() {
     super();
@@ -110,6 +108,11 @@ export class LexisEditorElement extends HTMLElement {
       this.#syncPlaceholderText();
       this.#syncPlaceholderState();
     }
+
+    if (name === "preset") {
+      this.#preset =
+        this.getAttribute("preset") === "simple" ? "simple" : "default";
+    }
   }
 
   formResetCallback() {
@@ -122,6 +125,10 @@ export class LexisEditorElement extends HTMLElement {
   }
 
   formStateRestoreCallback(state) {
+    if (!this.editor) {
+      return;
+    }
+
     this.editor.value = state ?? this.#defaultValue;
     this.#syncPlaceholderState();
   }
@@ -178,12 +185,19 @@ export class LexisEditorElement extends HTMLElement {
    * @private
    */
   #setupEditor(config) {
+    const Editor = this.#preset === "simple" ? CoreEditor : DefaultEditor;
+
     this.#editorInstance = new Editor(this.$rootEl, config);
     this.#editorInstance.attachHostElement(this);
 
     for (const cmd of commands) {
       this.#editorInstance.registerCommand(cmd);
     }
+
+    this.#resolvedConfig = deepMergeObjects(
+      this.#resolvedConfig,
+      this.#editorInstance.config,
+    );
   }
 
   #attachToolbar() {

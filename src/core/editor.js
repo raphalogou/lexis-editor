@@ -6,6 +6,7 @@ import {
   $convertToMarkdownString,
 } from "@lexical/markdown";
 import {
+  $createParagraphNode,
   $getRoot,
   $isLineBreakNode,
   $isParagraphNode,
@@ -14,16 +15,10 @@ import {
 } from "lexical";
 import { ListenerRegistry } from "../helper/listener";
 import { sanitizeHtml } from "../helper/sanitizer";
-import {
-  ClipboardExtension,
-  CodeBlockExtension,
-  ImageExtension,
-  LexisExtension,
-  LinkExtension,
-  MarkdownExtension,
-  RichTextExtension,
-} from "./extensions";
+import { deepMergeObjects } from "../helper/utils";
+import { LexisExtension } from "./extensions/extension";
 import { MARKDOWN_TRANSFORMERS } from "./extensions/markdown";
+import { RichTextExtension } from "./extensions/rich-text";
 import { logger } from "./logger";
 
 /**
@@ -114,6 +109,7 @@ export class Editor {
 
   /**
    * @param {HTMLElement} rootEl
+   * @param {Object} config
    */
   constructor(rootEl, config = {}) {
     this.config = {
@@ -189,13 +185,32 @@ export class Editor {
       const rootNode = $getRoot();
       rootNode.clear();
 
-      if (this.supportsMarkdown) {
+      if (this.supportsMarkdown && this.#extensions.has("markdown")) {
         $convertFromMarkdownString(value, MARKDOWN_TRANSFORMERS, rootNode);
       } else {
-        $generateNodesFromDOM(
+        const nodes = $generateNodesFromDOM(
           this.lexicalEditor,
           new DOMParser().parseFromString(value, "text/html"),
         );
+
+        let wrapperNode = null;
+        for (const node of nodes) {
+          if ($isTextNode(node) || $isLineBreakNode(node)) {
+            if (!wrapperNode) {
+              wrapperNode = $createParagraphNode();
+              rootNode.append(wrapperNode);
+            }
+
+            wrapperNode.append(node);
+            continue;
+          }
+
+          if (wrapperNode) {
+            wrapperNode = null;
+          }
+
+          rootNode.append(node);
+        }
       }
     });
 
@@ -374,11 +389,11 @@ export class Editor {
   }
 
   #registerExtensions() {
-    const customExtensions = this.config.extensions ?? [];
-    const extensionClasses =
-      this.config.extensionMode === "replace"
-        ? customExtensions
-        : [...this.baseExtensions, ...customExtensions];
+    const extensionClasses = this.config.extensions ?? [];
+
+    if (!extensionClasses.includes(RichTextExtension)) {
+      extensionClasses.unshift(RichTextExtension);
+    }
 
     for (const ExtensionClass of extensionClasses) {
       const extension = new ExtensionClass(this);
@@ -389,17 +404,6 @@ export class Editor {
 
       this.#extensions.set(extension.name, extension);
     }
-  }
-
-  get baseExtensions() {
-    return [
-      RichTextExtension,
-      LinkExtension,
-      ImageExtension,
-      ClipboardExtension,
-      CodeBlockExtension,
-      MarkdownExtension,
-    ];
   }
 
   /**
@@ -417,21 +421,28 @@ export class Editor {
   }
 }
 
-function isPlainObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
+export function resolveConfiguration(base, config) {
+  const clonedConfig = { ...config };
+  let extensions;
 
-function deepMergeObjects(base, overrides) {
-  const output = { ...base };
-
-  for (const [key, value] of Object.entries(overrides)) {
-    if (isPlainObject(output[key]) && isPlainObject(value)) {
-      output[key] = deepMergeObjects(output[key], value);
-      continue;
-    }
-
-    output[key] = value;
+  if (clonedConfig.extensionMode === "replace") {
+    extensions = clonedConfig.extensions ?? [];
+  } else {
+    extensions = [
+      ...(base.extensions ?? []),
+      ...(clonedConfig.extensions ?? []),
+    ];
   }
 
-  return output;
+  delete clonedConfig.extensions;
+
+  const resolved = deepMergeObjects(
+    {
+      ...base,
+      extensions: Array.from(new Set(extensions)),
+    },
+    clonedConfig,
+  );
+
+  return resolved;
 }
