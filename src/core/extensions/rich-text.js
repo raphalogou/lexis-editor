@@ -68,12 +68,12 @@ export class RichTextExtension extends LexisExtension {
                 const nodeSelection = $createNodeSelection();
                 nodeSelection.add(nextSibling.getKey());
                 $setSelection(nodeSelection);
-              } else {
-                selectNodeStart(nextSibling);
+
+                event?.preventDefault();
+                return true;
               }
 
-              event?.preventDefault();
-              return true;
+              return false;
             },
             COMMAND_PRIORITY_HIGH,
           ),
@@ -100,12 +100,11 @@ export class RichTextExtension extends LexisExtension {
                 const nodeSelection = $createNodeSelection();
                 nodeSelection.add(previousSibling.getKey());
                 $setSelection(nodeSelection);
-              } else {
-                selectNodeEnd(previousSibling);
+                event?.preventDefault();
+                return true;
               }
 
-              event?.preventDefault();
-              return true;
+              return false;
             },
             COMMAND_PRIORITY_HIGH,
           ),
