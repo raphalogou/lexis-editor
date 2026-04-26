@@ -42,6 +42,11 @@
   --lexis-editor-radius: 0.45rem;
   --lexis-focus-ring: var(--lexis-control-focus-ring);
 
+  --lexis-code-picker-bg: #ffffff;
+  --lexis-code-picker-fg: #2f3138;
+  --lexis-code-picker-border: #b8beca;
+  --lexis-code-picker-shadow: none;
+
   --lexis-popover-bg: var(--lexis-toolbar-bg);
   --lexis-popover-fg: var(--lexis-toolbar-fg);
   --lexis-popover-border: var(--lexis-toolbar-border);

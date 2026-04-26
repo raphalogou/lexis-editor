@@ -1,0 +1,7 @@
+.git/
+.idea
+.zed
+node_modules/
+
+public/
+package-lock.json

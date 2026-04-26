@@ -284,7 +284,7 @@ export class CodeBlockExtension extends LexisExtension {
     const hostBounds = hostElement.getBoundingClientRect();
     const codeBounds = codeBlockElement.getBoundingClientRect();
 
-    picker.style.top = `${codeBounds.top - hostBounds.top + 8}px`;
+    picker.style.top = `${codeBounds.top - hostBounds.top + 6}px`;
     picker.style.left = `${
       codeBounds.right - hostBounds.left - picker.offsetWidth - 8
     }px`;

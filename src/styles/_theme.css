@@ -1,4 +1,4 @@
-:root {
+:where(lexis-editor) {
   --lexis-content-font-size: 16px;
   --lexis-content-padding-y: 0.65em;
   --lexis-content-padding-x: 1em;
@@ -36,10 +36,6 @@
     --lexis-code-border: #d7dae2;
     --lexis-divider-color: #c5cad6;
     --lexis-divider-selected-color: #3c84f4;
-    --lexis-code-picker-bg: #ffffff;
-    --lexis-code-picker-fg: #2f3138;
-    --lexis-code-picker-border: #b8beca;
-    --lexis-code-picker-shadow: none;
 
     --lexis-token-atrule: #a626a4;
     --lexis-token-attr: #986801;
@@ -81,10 +77,6 @@
     --lexis-code-border: #3e4451;
     --lexis-divider-color: #4b5263;
     --lexis-divider-selected-color: #61afef;
-    --lexis-code-picker-bg: #21252b;
-    --lexis-code-picker-fg: #d7dce5;
-    --lexis-code-picker-border: #4b5263;
-    --lexis-code-picker-shadow: none;
 
     --lexis-token-atrule: #c678dd;
     --lexis-token-attr: #d19a66;
