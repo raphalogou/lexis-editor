@@ -169,15 +169,21 @@ export class LexisEditorElement extends HTMLElement {
    * @private
    */
   #setupContentRoot() {
-    this.$rootEl = createElement("div", {
-      class: "lexis-content",
-      "data-slot": "editor-content",
-      contentEditable: true,
-    });
+    let shouldAppend = false;
 
+    let rootEl = this.querySelector("[data-slot='editor-content']");
+    if (!rootEl) {
+      rootEl = createElement("div", { "data-slot": "editor-content" });
+      shouldAppend = true;
+    }
+
+    rootEl.classList.add("lexis-content");
+    rootEl.contentEditable = true;
+
+    this.$rootEl = rootEl;
     this.#syncPlaceholderText();
 
-    this.append(this.$rootEl);
+    shouldAppend && this.append(this.$rootEl);
   }
 
   /**

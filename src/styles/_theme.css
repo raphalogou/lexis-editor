@@ -17,11 +17,15 @@
   --lexis-hr-margin-y: 0.8rem;
   --lexis-selected-outline-width: 2px;
   --lexis-selected-outline-offset: 2px;
+  --lexis-divider-color: #c5cad6;
+  --lexis-divider-selected-color: #3c84f4;
 
   --lexis-inline-code-font-size: 94%;
   --lexis-inline-code-padding-y: 2px;
   --lexis-inline-code-padding-x: 0.25rem;
   --lexis-inline-code-radius: 6px;
+  --lexis-inline-code-bg: #f3f4f7;
+  --lexis-inline-code-fg: #383a42;
 
   --lexis-code-padding: 1ch;
   --lexis-code-margin-block-end: 1em;
@@ -29,13 +33,9 @@
 
   .code-block,
   .code-block[data-theme="one-light"] {
-    --lexis-inline-code-bg: #f3f4f7;
-    --lexis-inline-code-fg: #383a42;
     --lexis-code-bg: #f3f4f7;
     --lexis-code-fg: #383a42;
     --lexis-code-border: #d7dae2;
-    --lexis-divider-color: #c5cad6;
-    --lexis-divider-selected-color: #3c84f4;
 
     --lexis-token-atrule: #a626a4;
     --lexis-token-attr: #986801;
@@ -70,13 +70,9 @@
   }
 
   .code-block[data-theme="one-dark"] {
-    --lexis-inline-code-bg: #282c34;
-    --lexis-inline-code-fg: #abb2bf;
     --lexis-code-bg: #282c34;
     --lexis-code-fg: #abb2bf;
     --lexis-code-border: #3e4451;
-    --lexis-divider-color: #4b5263;
-    --lexis-divider-selected-color: #61afef;
 
     --lexis-token-atrule: #c678dd;
     --lexis-token-attr: #d19a66;
