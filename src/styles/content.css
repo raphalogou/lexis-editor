@@ -53,13 +53,18 @@
   }
 
   hr {
-    border: 0;
-    border-top: 1px solid var(--lexis-divider-color);
-    margin: var(--lexis-hr-margin-y) 0;
+    display: block;
+    height: var(--lexis-hr-height, 2px);
+    border: none;
+    padding: 0;
+    margin: var(--lexis-hr-spacing-y) 0;
+    background-color: var(--lexis-hr-color);
+    user-select: none;
+    cursor: pointer;
 
     &.selected {
       outline: var(--lexis-selected-outline-width) solid
-        var(--lexis-divider-selected-color);
+        var(--lexis-selected-outline-color);
       outline-offset: var(--lexis-selected-outline-offset);
     }
   }

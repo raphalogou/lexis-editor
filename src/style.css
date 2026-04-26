@@ -13,3 +13,14 @@
   display: grid;
   width: 100%;
 }
+
+:where(.lexis-content) {
+  hr {
+    --lexis-selected-outline-offset: 6px;
+    --lexis-divider-color: #c5cad6;
+  }
+
+  .editor-image[data-selected="true"] {
+    --lexis-selected-outline-offset: 2px;
+  }
+}

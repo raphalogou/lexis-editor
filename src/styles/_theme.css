@@ -1,4 +1,4 @@
-:where(lexis-editor) {
+:where(.lexis-content) {
   --lexis-content-font-size: 16px;
   --lexis-content-padding-y: 0.65em;
   --lexis-content-padding-x: 1em;
@@ -14,11 +14,13 @@
 
   --lexis-font-bold-weight: 600;
 
-  --lexis-hr-margin-y: 0.8rem;
   --lexis-selected-outline-width: 2px;
   --lexis-selected-outline-offset: 2px;
-  --lexis-divider-color: #c5cad6;
-  --lexis-divider-selected-color: #3c84f4;
+  --lexis-selected-outline-color: #3c84f4;
+
+  --lexis-hr-spacing-y: 1.5rem;
+  --lexis-hr-color: #c5cad6;
+  --lexis-hr-selected-color: #3c84f4;
 
   --lexis-inline-code-font-size: 94%;
   --lexis-inline-code-padding-y: 2px;

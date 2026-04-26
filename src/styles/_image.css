@@ -4,7 +4,7 @@
     display: block;
     max-width: 100%;
     margin: 0 0 1em;
-    border-radius: 0.35rem;
+    border-radius: 0.25rem;
     padding: 0.2rem;
 
     img {
@@ -42,8 +42,9 @@
     }
 
     &[data-selected="true"] {
-      outline: 2px solid var(--lexis-selected-outline);
-      outline-offset: 2px;
+      outline: var(--lexis-selected-outline-width) solid
+        var(--lexis-selected-outline-color);
+      outline-offset: var(--lexis-selected-outline-offset);
     }
 
     & .editor-image-overlay {

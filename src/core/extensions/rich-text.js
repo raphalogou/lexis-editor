@@ -41,39 +41,37 @@ export class RichTextExtension extends LexisExtension {
             KEY_ARROW_DOWN_COMMAND,
             (event) => {
               const selection = $getSelection();
+              let currentNode;
 
               if ($isNodeSelection(selection)) {
                 const nodes = selection.getNodes();
-                if (nodes.length !== 1 || !$isDecoratorNode(nodes[0])) {
-                  return false;
-                }
+                currentNode = nodes.length === 1 ? nodes[0] : null;
+              } else if ($isRangeSelection(selection)) {
+                currentNode = selection.focus.getNode().getTopLevelElement();
+              }
 
-                const [decoratorNode] = nodes;
-                let nextSibling = decoratorNode.getNextSibling();
-                if (!nextSibling) {
-                  nextSibling = $createParagraphNode();
-                  decoratorNode.insertAfter(nextSibling);
-                }
+              if (!currentNode) {
+                return false;
+              }
 
+              let nextSibling = currentNode.getNextSibling();
+              if (!nextSibling && $isDecoratorNode(currentNode)) {
+                nextSibling = $createParagraphNode();
+                currentNode.insertAfter(nextSibling);
+              }
+
+              if (!nextSibling) {
+                return false;
+              }
+
+              if ($isDecoratorNode(nextSibling)) {
+                const nodeSelection = $createNodeSelection();
+                nodeSelection.add(nextSibling.getKey());
+                $setSelection(nodeSelection);
+              } else {
                 selectNodeStart(nextSibling);
-                event?.preventDefault();
-                return true;
               }
 
-              if (!$isRangeSelection(selection)) {
-                return false;
-              }
-
-              const focusNode = selection.focus.getNode();
-              const topLevelElement = focusNode.getTopLevelElement();
-              const nextSibling = topLevelElement?.getNextSibling();
-              if (!$isDecoratorNode(nextSibling)) {
-                return false;
-              }
-
-              const nodeSelection = $createNodeSelection();
-              nodeSelection.add(nextSibling.getKey());
-              $setSelection(nodeSelection);
               event?.preventDefault();
               return true;
             },
@@ -84,38 +82,28 @@ export class RichTextExtension extends LexisExtension {
             KEY_ARROW_UP_COMMAND,
             (event) => {
               const selection = $getSelection();
+              let currentNode;
 
               if ($isNodeSelection(selection)) {
                 const nodes = selection.getNodes();
-                if (nodes.length !== 1 || !$isDecoratorNode(nodes[0])) {
-                  return false;
-                }
+                currentNode = nodes.length === 1 ? nodes[0] : null;
+              } else if ($isRangeSelection(selection)) {
+                currentNode = selection.focus.getNode().getTopLevelElement();
+              }
 
-                const [decoratorNode] = nodes;
-                const previousSibling = decoratorNode.getPreviousSibling();
-                if (!previousSibling) {
-                  return false;
-                }
+              const previousSibling = currentNode?.getPreviousSibling();
+              if (!currentNode || !previousSibling) {
+                return false;
+              }
 
+              if ($isDecoratorNode(previousSibling)) {
+                const nodeSelection = $createNodeSelection();
+                nodeSelection.add(previousSibling.getKey());
+                $setSelection(nodeSelection);
+              } else {
                 selectNodeEnd(previousSibling);
-                event?.preventDefault();
-                return true;
               }
 
-              if (!$isRangeSelection(selection)) {
-                return false;
-              }
-
-              const focusNode = selection.focus.getNode();
-              const topLevelElement = focusNode.getTopLevelElement();
-              const previousSibling = topLevelElement?.getPreviousSibling();
-              if (!$isDecoratorNode(previousSibling)) {
-                return false;
-              }
-
-              const nodeSelection = $createNodeSelection();
-              nodeSelection.add(previousSibling.getKey());
-              $setSelection(nodeSelection);
               event?.preventDefault();
               return true;
             },
