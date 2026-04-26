@@ -1,6 +1,9 @@
 :where(lexis-editor) {
   lexis-toolbar,
   [data-slot="editor-toolbar"] {
+    container: lexis-toolbar / inline-size;
+    anchor-name: --lexis-toolbar;
+
     display: flex;
     align-items: center;
     flex-wrap: wrap;

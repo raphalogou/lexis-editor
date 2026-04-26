@@ -37,7 +37,7 @@
   /* Tab panel styling */
   [role="tabpanel"] {
     display: none;
-    grid-template-columns: max-content minmax(14rem, 1fr);
+    grid-template-columns: max-content 1fr;
     gap: var(--lexis-popover-gap);
   }
 

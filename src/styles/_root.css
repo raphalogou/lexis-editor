@@ -112,7 +112,7 @@
   }
 
   & [data-slot="editor-content"] {
-    min-height: 16ch;
+    min-height: 10lh;
     width: 100%;
     border: 0;
     border-radius: 0;

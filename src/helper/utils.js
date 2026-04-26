@@ -18,3 +18,9 @@ export function deepMergeObjects(base, overrides) {
 
   return output;
 }
+
+export function createShortId(length = 8) {
+  return Math.random()
+    .toString(36)
+    .slice(2, 2 + length);
+}

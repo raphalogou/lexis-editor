@@ -1,11 +1,10 @@
 import { createElement } from "../helper/html";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
+import { createShortId } from "../helper/utils";
 
 const DEFAULT_LABEL = "Open popover";
 const DEFAULT_PLACEMENT = "bottom-end";
 const DEFAULT_OFFSET = 8;
-const VALID_SIDES = new Set(["top", "right", "bottom", "left"]);
-const VALID_ALIGNMENTS = new Set(["start", "center", "end"]);
 
 export class PopoverElement extends HTMLElement {
   static observedAttributes = ["label", "placement", "offset", "open"];
@@ -104,13 +103,12 @@ export class PopoverElement extends HTMLElement {
     this.#trigger.setAttribute("aria-haspopup", "dialog");
     this.#trigger.setAttribute("aria-controls", this.#panel.id);
 
+    this.style.setProperty("--popover-anchor-name", this.#anchorName);
+    this.style.setProperty("--popover-offset", `${this.offset}px`);
+
     this.#trigger.style.anchorName = this.#anchorName;
 
-    this.#panel.style.position = "absolute";
-    this.#panel.style.positionAnchor = this.#anchorName;
-
     this.#applyLabel();
-    this.#applyPlacement();
   }
 
   #setupListeners() {
@@ -206,15 +204,7 @@ export class PopoverElement extends HTMLElement {
       return;
     }
 
-    const { side, align } = parsePlacement(this.placement.toLowerCase());
-    const style = placementToStyle(side, align, this.offset);
-
-    this.#panel.dataset.placement = `${side}-${align}`;
-    this.#panel.style.top = style.top;
-    this.#panel.style.bottom = style.bottom;
-    this.#panel.style.left = style.left;
-    this.#panel.style.right = style.right;
-    this.#panel.style.transform = style.transform;
+    this.#panel.dataset.placement = this.getAttribute("placement");
   }
 
   #syncOpenState() {
@@ -262,66 +252,4 @@ export class PopoverElement extends HTMLElement {
 
     return Math.max(0, value);
   }
-}
-
-function parsePlacement(placement) {
-  const [rawSide = "bottom", rawAlign = "center"] = placement.split("-");
-  const side = VALID_SIDES.has(rawSide) ? rawSide : "bottom";
-  const align = VALID_ALIGNMENTS.has(rawAlign) ? rawAlign : "center";
-
-  return {
-    side,
-    align,
-  };
-}
-
-function placementToStyle(side, align, offset) {
-  const offsetPx = `${offset}px`;
-  const style = {
-    top: "auto",
-    bottom: "auto",
-    left: "auto",
-    right: "auto",
-    transform: "none",
-  };
-
-  if (side === "top") {
-    style.bottom = `calc(anchor(top) + ${offsetPx})`;
-  } else if (side === "left") {
-    style.right = `calc(anchor(left) + ${offsetPx})`;
-  } else if (side === "right") {
-    style.left = `calc(anchor(right) + ${offsetPx})`;
-  } else {
-    style.top = `calc(anchor(bottom) + ${offsetPx})`;
-  }
-
-  if (side === "left" || side === "right") {
-    if (align === "start") {
-      style.top = "anchor(top)";
-    } else if (align === "end") {
-      style.bottom = "anchor(bottom)";
-    } else {
-      style.top = "anchor(center)";
-      style.transform = "translateY(-50%)";
-    }
-
-    return style;
-  }
-
-  if (align === "start") {
-    style.left = "anchor(left)";
-  } else if (align === "end") {
-    style.right = "anchor(right)";
-  } else {
-    style.left = "anchor(center)";
-    style.transform = "translateX(-50%)";
-  }
-
-  return style;
-}
-
-function createShortId(length = 8) {
-  return Math.random()
-    .toString(36)
-    .slice(2, 2 + length);
 }

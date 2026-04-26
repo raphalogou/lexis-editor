@@ -1,7 +1,17 @@
+:where(xui-popover) {
+  [data-slot="popover-panel"] {
+    position: absolute;
+    position-anchor: var(--popover-anchor-name);
+    top: calc(anchor(bottom) + var(--popover-offset, 0px));
+    justify-self: anchor-center;
+    position-try: most-width flip-inline;
+  }
+}
+
 :where(lexis-toolbar) {
   [data-slot="popover-panel"],
   .lexis-popover-panel {
-    width: 24rem;
+    width: var(--lexis-popover-width, 24rem);
     margin: 0;
     border: 1px solid var(--lexis-popover-border);
     border-radius: var(--lexis-popover-radius);
@@ -109,5 +119,14 @@
       background: var(--lexis-popover-control-cancel-hover-bg);
       color: var(--lexis-popover-control-cancel-hover-fg);
     }
+  }
+}
+
+@container lexis-toolbar (width <= 36rem) {
+  [data-slot="popover-panel"] {
+    width: calc(anchor-size(--lexis-toolbar width) - 1rem);
+    inset: calc(anchor(bottom) + var(--popover-offset, 0px)) 0 auto
+      calc(anchor(--lexis-toolbar left) + 0.5rem);
+    justify-self: auto;
   }
 }
