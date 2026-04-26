@@ -5,6 +5,8 @@ import { createElement } from "../helper/html";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
 import { LexisToolbarElement } from "./toolbar";
 
+const MANAGED_TOOLBAR = Symbol("MANAGED_TOOLBAR");
+
 export class LexisEditorElement extends HTMLElement {
   /**
    * @type {{
@@ -89,12 +91,7 @@ export class LexisEditorElement extends HTMLElement {
   }
 
   disconnectedCallback() {
-    this.#listeners.cleanup();
-    this.editor.destroy();
-
-    this.toolbar = null;
-    this.#defaultValue = null;
-    this.#editorInstance = null;
+    this.disconnect();
   }
 
   attributeChangedCallback(name) {
@@ -293,9 +290,28 @@ export class LexisEditorElement extends HTMLElement {
       },
       groups: this.#resolvedConfig?.toolbar?.groups || {},
     });
+    toolbar[MANAGED_TOOLBAR] = true;
 
     return toolbar;
   }
+
+  disconnect = () => {
+    this.#listeners.cleanup();
+    this.editor?.destroy();
+
+    if (this.$rootEl) {
+      this.$rootEl?.remove();
+      this.$rootEl = null;
+    }
+
+    if (this.toolbar?.[MANAGED_TOOLBAR]) {
+      this.toolbar.remove();
+    }
+
+    this.toolbar = null;
+    this.#defaultValue = null;
+    this.#editorInstance = null;
+  };
 
   /**
    * Setup event listeners
