@@ -1,4 +1,4 @@
-:root {
+:where(lexis-toolbar) {
   [data-slot="popover-panel"],
   .lexis-popover-panel {
     width: 24rem;
@@ -35,11 +35,12 @@
 
     &:invalid {
       background: var(--lexis-invalid-bg);
-      box-shadow: inset 0 0 0 1px var(--lexis-invalid-border);
+      border-color: var(--lexis-invalid-border);
     }
 
     &:invalid:focus {
-      outline-color: var(--lexis-invalid-ring);
+      outline: 2px solid var(--lexis-invalid-ring);
+      outline-offset: -1px;
     }
   }
 

@@ -1,4 +1,4 @@
-:root {
+:where(lexis-editor) {
   .editor-image {
     position: relative;
     display: block;

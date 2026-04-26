@@ -1,4 +1,4 @@
-:root {
+:where(lexis-editor) {
   /* Tab group styling */
   .lexis-tab-group {
     display: flex;

@@ -17,7 +17,8 @@
       "import": "./dist/core.esm.js",
       "require": "./dist/core.cjs"
     },
-    "./lexis-editor.css": "./dist/lexis-editor.css"
+    "./lexis-editor.css": "./dist/lexis-editor.css",
+    "./lexis-content.css": "./dist/lexis-content.css"
   },
   "scripts": {
     "dev": "vite",

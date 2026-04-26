@@ -1,6 +1,7 @@
+import "./styles/editor.css";
 import "./style.css";
 
-import "./styles/index.css";
+import "./index";
 
 document
   .querySelector("lexis-editor")

@@ -57,7 +57,7 @@
     var(--lexis-popover-input-padding-x);
   --lexis-popover-input-placeholder: #6b7280;
   --lexis-popover-control-active-bg: var(--lexis-accent);
-  --lexis-popover-control-active-fg: #ffffff;
+  --lexis-popover-control-active-fg: oklch(100% 0 0); /* was #ffffff */
   --lexis-popover-control-border: transparent;
   --lexis-popover-control-hover-bg: color-mix(
     in oklch,
@@ -65,7 +65,7 @@
     black 12%
   );
   --lexis-popover-control-hover-fg: #ffffff;
-  --lexis-popover-control-cancel-bg: #ffffff;
+  --lexis-popover-control-cancel-bg: oklch(100% 0 0); /* was #ffffff */
   --lexis-popover-control-cancel-fg: var(--lexis-accent);
   --lexis-popover-control-cancel-border: var(--lexis-control-border);
   --lexis-popover-control-cancel-hover-bg: color-mix(
@@ -77,104 +77,11 @@
   --lexis-selected-outline: color-mix(in oklch, var(--lexis-accent), black 10%);
   --lexis-image-caption-fg: #4b5563;
   --lexis-invalid-border: #dc2626;
-  --lexis-invalid-ring: rgba(220, 38, 38, 0.2);
+  --lexis-invalid-ring: rgba(220, 38, 38);
   --lexis-invalid-bg: #fff5f5;
 }
 
-:root,
-.code-block,
-.code-block[data-theme="one-light"] {
-  --lexis-inline-code-bg: #f3f4f7;
-  --lexis-inline-code-fg: #383a42;
-  --lexis-code-bg: #f3f4f7;
-  --lexis-code-fg: #383a42;
-  --lexis-code-border: #d7dae2;
-  --lexis-divider-color: #c5cad6;
-  --lexis-divider-selected-color: #3c84f4;
-  --lexis-code-picker-bg: #ffffff;
-  --lexis-code-picker-fg: #2f3138;
-  --lexis-code-picker-border: #b8beca;
-  --lexis-code-picker-shadow: none;
-
-  --lexis-token-atrule: #a626a4;
-  --lexis-token-attr: #986801;
-  --lexis-token-boolean: #0184bc;
-  --lexis-token-builtin: #e45649;
-  --lexis-token-cdata: #a0a1a7;
-  --lexis-token-char: #50a14f;
-  --lexis-token-class: #c18401;
-  --lexis-token-class-name: #c18401;
-  --lexis-token-comment: #a0a1a7;
-  --lexis-token-constant: #986801;
-  --lexis-token-deleted: #e45649;
-  --lexis-token-doctype: #a0a1a7;
-  --lexis-token-entity: #4078f2;
-  --lexis-token-function: #4078f2;
-  --lexis-token-important: #c18401;
-  --lexis-token-inserted: #50a14f;
-  --lexis-token-keyword: #a626a4;
-  --lexis-token-namespace: #986801;
-  --lexis-token-number: #986801;
-  --lexis-token-operator: #383a42;
-  --lexis-token-prolog: #a0a1a7;
-  --lexis-token-property: #986801;
-  --lexis-token-punctuation: #383a42;
-  --lexis-token-regex: #50a14f;
-  --lexis-token-selector: #e45649;
-  --lexis-token-string: #50a14f;
-  --lexis-token-symbol: #986801;
-  --lexis-token-tag: #e45649;
-  --lexis-token-url: #0184bc;
-  --lexis-token-variable: #e06c75;
-}
-
-.code-block[data-theme="one-dark"] {
-  --lexis-inline-code-bg: #282c34;
-  --lexis-inline-code-fg: #abb2bf;
-  --lexis-code-bg: #282c34;
-  --lexis-code-fg: #abb2bf;
-  --lexis-code-border: #3e4451;
-  --lexis-divider-color: #4b5263;
-  --lexis-divider-selected-color: #61afef;
-  --lexis-code-picker-bg: #21252b;
-  --lexis-code-picker-fg: #d7dce5;
-  --lexis-code-picker-border: #4b5263;
-  --lexis-code-picker-shadow: none;
-
-  --lexis-token-atrule: #c678dd;
-  --lexis-token-attr: #d19a66;
-  --lexis-token-boolean: #d19a66;
-  --lexis-token-builtin: #e06c75;
-  --lexis-token-cdata: #5c6370;
-  --lexis-token-char: #98c379;
-  --lexis-token-class: #e5c07b;
-  --lexis-token-class-name: #e5c07b;
-  --lexis-token-comment: #5c6370;
-  --lexis-token-constant: #d19a66;
-  --lexis-token-deleted: #e06c75;
-  --lexis-token-doctype: #5c6370;
-  --lexis-token-entity: #61afef;
-  --lexis-token-function: #61afef;
-  --lexis-token-important: #e5c07b;
-  --lexis-token-inserted: #98c379;
-  --lexis-token-keyword: #c678dd;
-  --lexis-token-namespace: #d19a66;
-  --lexis-token-number: #d19a66;
-  --lexis-token-operator: #56b6c2;
-  --lexis-token-prolog: #5c6370;
-  --lexis-token-property: #d19a66;
-  --lexis-token-punctuation: #abb2bf;
-  --lexis-token-regex: #98c379;
-  --lexis-token-selector: #e06c75;
-  --lexis-token-string: #98c379;
-  --lexis-token-symbol: #d19a66;
-  --lexis-token-tag: #e06c75;
-  --lexis-token-url: #56b6c2;
-  --lexis-token-variable: #e06c75;
-}
-
-lexis-editor,
-[data-slot="editor-root"] {
+:where(lexis-editor) {
   display: grid;
   gap: 0;
   position: relative;
@@ -182,49 +89,45 @@ lexis-editor,
   border: 1px solid var(--lexis-editor-border);
   border-radius: var(--lexis-editor-radius);
   overflow: hidden;
-}
 
-lexis-editor:focus-within,
-[data-slot="editor-root"]:focus-within {
-  box-shadow: none;
-}
-
-lexis-editor[data-layout="split"],
-[data-slot="editor-root"][data-layout="split"] {
-  gap: 0.5rem;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  overflow: visible;
-}
-
-lexis-editor[data-layout="split"]:focus-within,
-[data-slot="editor-root"][data-layout="split"]:focus-within {
-  box-shadow: none;
-}
-
-[data-slot="editor-content"] {
-  min-height: 16ch;
-  width: 100%;
-  border: 0;
-  border-radius: 0;
-  cursor: auto;
-  position: relative;
-  outline: none;
-
-  &[data-empty="true"]::before {
-    content: attr(data-placeholder);
-    position: absolute;
-    top: 0.65em;
-    left: 1em;
-    color: #8b9099;
-    pointer-events: none;
-    user-select: none;
+  &:focus-within {
+    box-shadow: none;
   }
-}
 
-lexis-editor[data-layout="split"] [data-slot="editor-content"],
-[data-slot="editor-root"][data-layout="split"] [data-slot="editor-content"] {
-  border: 1px solid var(--lexis-editor-border);
-  border-radius: 0.5rem;
+  &[data-layout="split"] {
+    gap: 0.5rem;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  &[data-layout="split"]:focus-within {
+    box-shadow: none;
+  }
+
+  & [data-slot="editor-content"] {
+    min-height: 16ch;
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+    cursor: auto;
+    position: relative;
+    outline: none;
+
+    &[data-empty="true"]::before {
+      content: attr(data-placeholder);
+      position: absolute;
+      top: 0.65em;
+      left: 1em;
+      color: var(--lexis-editor-placeholder-color, #8b9099);
+      pointer-events: none;
+      user-select: none;
+    }
+  }
+
+  &[data-layout="split"] [data-slot="editor-content"] {
+    border: 1px solid var(--lexis-editor-border);
+    border-radius: 0.5rem;
+  }
 }

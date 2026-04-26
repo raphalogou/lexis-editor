@@ -18,15 +18,17 @@ export default defineConfig({
     },
   },
   build: {
+    cssCodeSplit: true,
     lib: {
       entry: {
         core: r("src/core.js"),
         index: r("src/index.js"),
+        "lexis-editor.css": r("src/styles/editor.css"),
+        "lexis-content.css": r("src/styles/content.css"),
       },
       formats: ["es", "cjs"],
       fileName: (format, entryName) =>
         format === "es" ? `${entryName}.esm.js` : `${entryName}.cjs`,
-      cssFileName: "lexis-editor",
     },
     rolldownOptions: {
       external: [

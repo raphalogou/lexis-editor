@@ -1,4 +1,4 @@
-:root {
+:where(lexis-toolbar) {
   .lexis-select {
     min-width: var(--lexis-toolbar-select-min-width);
     min-height: var(--lexis-toolbar-control-size);

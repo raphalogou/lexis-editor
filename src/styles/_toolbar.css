@@ -1,4 +1,4 @@
-:root {
+:where(lexis-editor) {
   lexis-toolbar,
   [data-slot="editor-toolbar"] {
     display: flex;
@@ -13,9 +13,8 @@
     box-shadow: var(--lexis-toolbar-shadow);
   }
 
-  lexis-editor:not([data-layout="split"]) > lexis-toolbar,
-  [data-slot="editor-root"]:not([data-layout="split"])
-    > [data-slot="editor-toolbar"] {
+  &:not([data-layout="split"]) > lexis-toolbar,
+  &:not([data-layout="split"]) > [data-slot="editor-toolbar"] {
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -23,9 +22,8 @@
     border-bottom: 1px solid var(--lexis-editor-divider);
   }
 
-  lexis-editor[data-layout="split"] > lexis-toolbar,
-  [data-slot="editor-root"][data-layout="split"]
-    > [data-slot="editor-toolbar"] {
+  &[data-layout="split"] > lexis-toolbar,
+  &[data-layout="split"] > [data-slot="editor-toolbar"] {
     border: 1px solid var(--lexis-toolbar-border);
     border-radius: var(--lexis-toolbar-radius);
     background: var(--lexis-toolbar-bg);

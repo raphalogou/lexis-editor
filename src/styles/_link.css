@@ -1,4 +1,4 @@
-:root {
+:where(lexis-toolbar) {
   .link-popover-panel:popover-open {
     display: flex;
     padding: 0.35rem;
