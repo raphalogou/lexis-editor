@@ -11,9 +11,9 @@ import {
 
 export const defaultToolbarConfig = {
   template:
-    "bold italic underline code | format | link image | number-list bullet-list code-block divider ~ undo redo",
+    "bold italic underline code | block | link image | number-list bullet-list code-block divider ~ undo redo",
   groups: {
-    format: ["paragraph", "heading-2", "heading-3", "heading-4", "quote"],
+    block: ["paragraph", "heading-2", "heading-3", "heading-4", "quote"],
   },
 };
 
