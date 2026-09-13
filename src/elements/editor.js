@@ -3,6 +3,7 @@ import { Editor as CoreEditor } from "../editor/core";
 import { Editor as DefaultEditor } from "../editor/default";
 import { createElement } from "../helper/html";
 import { ListenerRegistry, registerEventListener } from "../helper/listener";
+import { deepMergeObjects, isPlainObject } from "../helper/utils";
 import { LexisToolbarElement } from "./toolbar";
 
 const MANAGED_TOOLBAR = Symbol("MANAGED_TOOLBAR");
@@ -529,25 +530,6 @@ function applyConfigPatch(target, patch) {
   if (isPlainObject(toolbar)) {
     target.toolbar = deepMergeObjects(target.toolbar || {}, toolbar);
   }
-}
-
-function isPlainObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function deepMergeObjects(base, overrides) {
-  const output = { ...base };
-
-  for (const [key, value] of Object.entries(overrides)) {
-    if (isPlainObject(output[key]) && isPlainObject(value)) {
-      output[key] = deepMergeObjects(output[key], value);
-      continue;
-    }
-
-    output[key] = value;
-  }
-
-  return output;
 }
 
 function cloneToolbarGroups(groups) {

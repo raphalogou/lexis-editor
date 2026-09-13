@@ -185,7 +185,7 @@ export class Editor {
       const rootNode = $getRoot();
       rootNode.clear();
 
-      if (this.supportsMarkdown && this.#extensions.has("markdown")) {
+      if (this.supportsMarkdown) {
         $convertFromMarkdownString(value, MARKDOWN_TRANSFORMERS, rootNode);
       } else {
         const nodes = $generateNodesFromDOM(
@@ -400,6 +400,12 @@ export class Editor {
       if (!(extension instanceof LexisExtension)) {
         logger.error("Extensions should extend LexisExtension class");
         continue;
+      }
+
+      if (this.#extensions.has(extension.name)) {
+        logger.warn(
+          `Extension name "${extension.name}" is already registered; the previous extension will be replaced.`,
+        );
       }
 
       this.#extensions.set(extension.name, extension);
