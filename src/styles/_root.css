@@ -47,6 +47,11 @@
   --lexis-code-picker-border: #b8beca;
   --lexis-code-picker-shadow: none;
 
+  --lexis-table-controls-bg: #ffffff;
+  --lexis-table-controls-fg: #2f3138;
+  --lexis-table-controls-border: #b8beca;
+  --lexis-table-controls-shadow: none;
+
   --lexis-popover-bg: var(--lexis-toolbar-bg);
   --lexis-popover-fg: var(--lexis-toolbar-fg);
   --lexis-popover-border: var(--lexis-toolbar-border);

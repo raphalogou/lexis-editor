@@ -96,6 +96,30 @@
     background-color: var(--lexis-table-selection-bg);
   }
 
+  .lexis-table-target-table,
+  .lexis-table-target-row,
+  .lexis-table-target-cell {
+    background-color: var(--lexis-table-danger-bg);
+  }
+
+  .lexis-table-target-row td,
+  .lexis-table-target-row th {
+    border-color: var(--lexis-table-danger-border);
+  }
+
+  .lexis-table-target-cell,
+  .lexis-table-target-table {
+    border-color: var(--lexis-table-danger-border);
+  }
+
+  .lexis-table-insert-after-bottom {
+    box-shadow: inset 0 -2px 0 0 var(--lexis-table-insert-color);
+  }
+
+  .lexis-table-insert-after-right {
+    box-shadow: inset -2px 0 0 0 var(--lexis-table-insert-color);
+  }
+
   .inline-code,
   .code-block {
     background: var(--lexis-inline-code-bg);

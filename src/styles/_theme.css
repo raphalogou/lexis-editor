@@ -27,6 +27,9 @@
   --lexis-table-header-bg: #f3f4f7;
   --lexis-table-header-weight: 600;
   --lexis-table-selection-bg: rgba(60, 132, 244, 0.15);
+  --lexis-table-danger-bg: rgba(220, 38, 38, 0.08);
+  --lexis-table-danger-border: #dc2626;
+  --lexis-table-insert-color: #3c84f4;
 
   --lexis-inline-code-font-size: 94%;
   --lexis-inline-code-padding-y: 2px;

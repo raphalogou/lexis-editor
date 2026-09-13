@@ -127,4 +127,47 @@
     color: var(--lexis-code-picker-fg);
     box-shadow: var(--lexis-code-picker-shadow);
   }
+
+  [data-slot="table-controls"] {
+    display: flex;
+    gap: 0.15rem;
+    padding: 0.2rem;
+    border: 1px solid var(--lexis-table-controls-border);
+    border-radius: 0.35rem;
+    background: var(--lexis-table-controls-bg);
+    color: var(--lexis-table-controls-fg);
+    box-shadow: var(--lexis-table-controls-shadow);
+
+    &[hidden] {
+      display: none;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border: 0;
+      border-radius: 0.3rem;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+
+      &:hover {
+        background-color: var(--lexis-control-hover-bg);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--lexis-accent);
+      }
+
+      [data-slot="toolbar-icon"] {
+        width: 1.75rem;
+        height: 1.75rem;
+        display: block;
+      }
+    }
+  }
 }
