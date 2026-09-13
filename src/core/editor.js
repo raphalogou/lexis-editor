@@ -61,6 +61,12 @@ export class Editor {
 
   static defaultTheme = {
     quote: "quote",
+    table: "table",
+    tableRow: "table-row",
+    tableCell: "table-cell",
+    tableCellHeader: "table-cell-header",
+    tableSelection: "table-selection",
+    tableScrollableWrapper: "table-scrollable-wrapper",
     heading: {
       h1: "h1",
       h2: "h2",

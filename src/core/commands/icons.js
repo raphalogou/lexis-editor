@@ -23,6 +23,7 @@ export const COMMAND_ICONS = {
   undo: `<svg ${SVG_PROPS}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>`,
   redo: `<svg ${SVG_PROPS}><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>`,
   "code-block": `<svg ${SVG_PROPS}><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>`,
+  table: `<svg ${SVG_PROPS}><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>`,
 };
 
 export const UI_ICONS = {

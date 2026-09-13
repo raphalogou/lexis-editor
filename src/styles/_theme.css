@@ -22,6 +22,12 @@
   --lexis-hr-color: #c5cad6;
   --lexis-hr-selected-color: #3c84f4;
 
+  --lexis-table-border-color: #d7dae2;
+  --lexis-table-cell-padding: 0.5rem 0.75rem;
+  --lexis-table-header-bg: #f3f4f7;
+  --lexis-table-header-weight: 600;
+  --lexis-table-selection-bg: rgba(60, 132, 244, 0.15);
+
   --lexis-inline-code-font-size: 94%;
   --lexis-inline-code-padding-y: 2px;
   --lexis-inline-code-padding-x: 0.25rem;

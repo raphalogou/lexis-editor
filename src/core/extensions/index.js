@@ -5,3 +5,4 @@ export { ImageExtension } from "./image";
 export { LinkExtension } from "./link";
 export { MARKDOWN_TRANSFORMERS, MarkdownExtension } from "./markdown";
 export { RichTextExtension } from "./rich-text";
+export { TableExtension } from "./table";

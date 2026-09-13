@@ -7,13 +7,14 @@ import {
   LinkExtension,
   MarkdownExtension,
   RichTextExtension,
+  TableExtension,
 } from "../core/extensions";
 
 export const defaultToolbarConfig = {
   template:
-    "bold italic underline code | block | link image | number-list bullet-list code-block divider ~ undo redo",
+    "bold italic underline code | format | link image | number-list bullet-list code-block insert-table divider ~ undo redo",
   groups: {
-    block: ["paragraph", "heading-2", "heading-3", "heading-4", "quote"],
+    format: ["paragraph", "heading-2", "heading-3", "heading-4", "quote"],
   },
 };
 
@@ -27,15 +28,10 @@ export class Editor extends BaseEditor {
         ImageExtension,
         ClipboardExtension,
         CodeBlockExtension,
+        TableExtension,
         MarkdownExtension,
       ],
-      toolbar: {
-        template:
-          "bold italic underline code | format | link image | number-list bullet-list code-block divider ~ undo redo",
-        groups: {
-          format: ["paragraph", "heading-2", "heading-3", "heading-4", "quote"],
-        },
-      },
+      toolbar: defaultToolbarConfig,
     };
 
     super(rootEl, resolveConfiguration(defaultConfig, config));
