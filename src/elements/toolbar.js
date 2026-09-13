@@ -14,6 +14,8 @@ export class LexisToolbarElement extends HTMLElement {
 
   #groupMap = new Map();
 
+  #forceDisabled = false;
+
   /** @type {import('../helper/listener').ListenerRegistry} */
   #listeners = new ListenerRegistry();
 
@@ -105,7 +107,7 @@ export class LexisToolbarElement extends HTMLElement {
 
     this.#listeners.track(
       registerEventListener(editorEl, "editor:focus", () =>
-        this.reflectEditorState(),
+        this.#reflectEditorStateUnlessDisabled(),
       ),
       registerEventListener(editorEl, "editor:blur", () =>
         this.#clearActiveStates(),
@@ -114,7 +116,7 @@ export class LexisToolbarElement extends HTMLElement {
 
     this.#listeners.track(
       this.#editor.lexicalEditor.registerUpdateListener(() => {
-        editorEl.hasFocus && this.reflectEditorState();
+        editorEl.hasFocus && this.#reflectEditorStateUnlessDisabled();
       }),
     );
 
@@ -128,6 +130,27 @@ export class LexisToolbarElement extends HTMLElement {
    */
   registerControl(commandId, element) {
     this.#buttonMap.set(commandId, element);
+  }
+
+  /**
+   * Forces every control inert regardless of per-command state, for the
+   * editor's readonly/disabled modes. While forced disabled, the toolbar
+   * also stops reacting to further editor updates/focus (see
+   * `#reflectEditorStateUnlessDisabled`) so it reads as truly inert rather
+   * than a live control an end user could still watch update.
+   * @param {boolean} disabled
+   */
+  setDisabled(disabled) {
+    this.#forceDisabled = disabled;
+    this.reflectEditorState();
+  }
+
+  #reflectEditorStateUnlessDisabled() {
+    if (this.#forceDisabled) {
+      return;
+    }
+
+    this.reflectEditorState();
   }
 
   dispatchCommandEvent = (evt) => {
@@ -156,7 +179,7 @@ export class LexisToolbarElement extends HTMLElement {
   reflectEditorState() {
     this.#buttonMap.forEach((btn, cmd) => {
       const isActive = this.#editor.isActive(cmd);
-      const isDisabled = this.#editor.isDisabled(cmd);
+      const isDisabled = this.#forceDisabled || this.#editor.isDisabled(cmd);
       const cachedState = this.#buttonStateCache.get(cmd);
 
       // Only update if state has changed
@@ -191,7 +214,8 @@ export class LexisToolbarElement extends HTMLElement {
       let disabledCount = 0;
 
       for (const commandId of commands) {
-        const isDisabled = this.#editor.isDisabled(commandId);
+        const isDisabled =
+          this.#forceDisabled || this.#editor.isDisabled(commandId);
         const option = optionsByCommand.get(commandId);
         if (option) {
           option.disabled = isDisabled;
@@ -215,7 +239,8 @@ export class LexisToolbarElement extends HTMLElement {
         select.value = firstEnabled || commands[0];
       }
 
-      select.disabled = disabledCount === commands.length;
+      select.disabled =
+        this.#forceDisabled || disabledCount === commands.length;
 
       if (activeCommand) {
         select.setAttribute("data-state", "active");

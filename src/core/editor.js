@@ -314,6 +314,11 @@ export class Editor {
       throw new Error(`Command "${id}" is not registered`);
     }
 
+    if (!this.lexicalEditor.isEditable()) {
+      logger.debug(`Ignoring "${id}" command: editor is not editable`);
+      return;
+    }
+
     this.lexicalEditor.focus();
     this.getCommand(id).execute(this.lexicalEditor, payload);
   }

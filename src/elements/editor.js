@@ -53,13 +53,16 @@ export class LexisEditorElement extends HTMLElement {
   /** @type {"simple" | "default" } */
   #preset = "default";
 
+  /** @type {Boolean} */
+  #isFormDisabled = false;
+
   /**
    * @type {import('./toolbar').LexisToolbarElement}
    */
   toolbar = null;
 
   static formAssociated = true;
-  static observedAttributes = ["placeholder", "required", "preset"];
+  static observedAttributes = ["placeholder", "required", "preset", "readonly"];
 
   constructor() {
     super();
@@ -77,6 +80,7 @@ export class LexisEditorElement extends HTMLElement {
     this.#validate();
 
     this.#attachToolbar();
+    this.#syncEditableState();
 
     this.#defaultValue = this.getAttribute("value") ?? "";
     this.editor.value = this.#defaultValue;
@@ -111,6 +115,21 @@ export class LexisEditorElement extends HTMLElement {
       this.#preset =
         this.getAttribute("preset") === "simple" ? "simple" : "default";
     }
+
+    if (name === "readonly") {
+      this.#syncEditableState();
+    }
+  }
+
+  /**
+   * Called by the browser when the element's disabled state changes —
+   * either the `disabled` attribute itself, or an ancestor
+   * `<fieldset disabled>`.
+   * @param {boolean} disabled
+   */
+  formDisabledCallback(disabled) {
+    this.#isFormDisabled = disabled;
+    this.#syncEditableState();
   }
 
   formResetCallback() {
@@ -160,6 +179,7 @@ export class LexisEditorElement extends HTMLElement {
     this.#internals.role = "textbox";
     this.#internals.ariaMultiLine = "true";
     this.#internals.ariaReadOnly = "false";
+    this.#internals.ariaDisabled = "false";
   }
 
   /**
@@ -415,6 +435,28 @@ export class LexisEditorElement extends HTMLElement {
     if (!this.$rootEl || !this.#editorInstance) return;
 
     this.$rootEl.dataset.empty = String(this.editor.isEmpty);
+  }
+
+  /**
+   * Applies the combined readonly/disabled state to the content root, the
+   * underlying Lexical editor, and the toolbar.
+   * @private
+   */
+  #syncEditableState() {
+    if (!this.$rootEl) return;
+
+    const isReadOnly = this.hasAttribute("readonly");
+    const isNonEditable = isReadOnly || this.#isFormDisabled;
+
+    this.$rootEl.contentEditable = isNonEditable ? "false" : "true";
+    this.$rootEl.dataset.readonly = String(isReadOnly);
+    this.$rootEl.dataset.disabled = String(this.#isFormDisabled);
+
+    this.#internals.ariaReadOnly = String(isReadOnly);
+    this.#internals.ariaDisabled = String(this.#isFormDisabled);
+
+    this.editor?.lexicalEditor.setEditable(!isNonEditable);
+    this.toolbar?.setDisabled(isNonEditable);
   }
 
   #resolveInitialConfig() {

@@ -51,6 +51,13 @@ export class ImageExtension extends LexisExtension {
     URL: "url",
   };
 
+  /**
+   * Grace period before warning that a file image is still stuck
+   * "uploading" — almost always means `editor:image:upload` was never
+   * wired up to resolve it to a durable URL.
+   */
+  static UPLOAD_WARNING_DELAY_MS = 4000;
+
   #insertMode = null; // upload | url
 
   #uid = Math.random().toString(36).slice(2, 8);
@@ -75,6 +82,9 @@ export class ImageExtension extends LexisExtension {
 
   /** @type {Map<string, {file: File, blobUrl: string}>} */
   #fileEntriesByNodeKey = new Map();
+
+  /** @type {Map<string, ReturnType<typeof setTimeout>>} */
+  #pendingUploadWarnings = new Map();
 
   get lexicalExtension() {
     return defineExtension({
@@ -131,7 +141,10 @@ export class ImageExtension extends LexisExtension {
           lexicalEditor.registerCommand(
             PASTE_COMMAND,
             (event) => {
-              if (!(event instanceof ClipboardEvent)) {
+              if (
+                !lexicalEditor.isEditable() ||
+                !(event instanceof ClipboardEvent)
+              ) {
                 return false;
               }
 
@@ -155,7 +168,10 @@ export class ImageExtension extends LexisExtension {
           lexicalEditor.registerCommand(
             DRAGOVER_COMMAND,
             (event) => {
-              if (!event.dataTransfer?.types.includes("Files")) {
+              if (
+                !lexicalEditor.isEditable() ||
+                !event.dataTransfer?.types.includes("Files")
+              ) {
                 return false;
               }
 
@@ -168,7 +184,10 @@ export class ImageExtension extends LexisExtension {
           lexicalEditor.registerCommand(
             DROP_COMMAND,
             (event) => {
-              if (!event.dataTransfer?.types.includes("Files")) {
+              if (
+                !lexicalEditor.isEditable() ||
+                !event.dataTransfer?.types.includes("Files")
+              ) {
                 return false;
               }
 
@@ -210,6 +229,7 @@ export class ImageExtension extends LexisExtension {
                 }
 
                 this.#releaseNodeFileEntry(nodeKey);
+                this.#cancelPendingUploadWarning(nodeKey);
               }
             },
             { skipInitialization: true },
@@ -243,6 +263,11 @@ export class ImageExtension extends LexisExtension {
   dispose() {
     this.#listeners.cleanup();
 
+    for (const timeoutId of this.#pendingUploadWarnings.values()) {
+      clearTimeout(timeoutId);
+    }
+    this.#pendingUploadWarnings.clear();
+
     for (const nodeKey of this.#fileEntriesByNodeKey.keys()) {
       this.#releaseNodeFileEntry(nodeKey);
     }
@@ -262,6 +287,48 @@ export class ImageExtension extends LexisExtension {
 
     URL.revokeObjectURL(entry.blobUrl);
     this.#fileEntriesByNodeKey.delete(nodeKey);
+  }
+
+  /**
+   * There's no reliable way to check whether a consumer actually listens
+   * for `editor:image:upload`, so this uses a grace-period heuristic: if
+   * the node is still "uploading" after the delay, nobody ever resolved
+   * it, which almost always means the event was never wired up.
+   */
+  #schedulePendingUploadWarning(nodeKey) {
+    const timeoutId = setTimeout(() => {
+      this.#pendingUploadWarnings.delete(nodeKey);
+
+      const stillUploading = this.editor.lexicalEditor.read(() => {
+        const node = $getNodeByKey(nodeKey);
+        return (
+          $isImageNode(node) &&
+          node.getUploadStatus() === UPLOAD_STATUS.UPLOADING
+        );
+      });
+
+      if (stillUploading) {
+        logger.warn(
+          "An image inserted from a file is still 'uploading' after " +
+            `${ImageExtension.UPLOAD_WARNING_DELAY_MS}ms. Listen for the ` +
+            "'editor:image:upload' event and call upload.success({ url }) " +
+            "(or upload.error(message)) — otherwise it stays a temporary " +
+            "blob: URL and breaks on reload.",
+        );
+      }
+    }, ImageExtension.UPLOAD_WARNING_DELAY_MS);
+
+    this.#pendingUploadWarnings.set(nodeKey, timeoutId);
+  }
+
+  #cancelPendingUploadWarning(nodeKey) {
+    const timeoutId = this.#pendingUploadWarnings.get(nodeKey);
+    if (timeoutId === undefined) {
+      return;
+    }
+
+    clearTimeout(timeoutId);
+    this.#pendingUploadWarnings.delete(nodeKey);
   }
 
   #buildPopover() {
@@ -595,6 +662,7 @@ export class ImageExtension extends LexisExtension {
         file,
         blobUrl: previewUrl,
       });
+      this.#schedulePendingUploadWarning(insertedNodeKey);
     }
 
     // Proceed with file upload
@@ -608,6 +676,8 @@ export class ImageExtension extends LexisExtension {
               if (!insertedNodeKey) {
                 return;
               }
+
+              this.#cancelPendingUploadWarning(insertedNodeKey);
 
               this.editor.lexicalEditor.update(() => {
                 const node = $getNodeByKey(insertedNodeKey);
@@ -633,6 +703,8 @@ export class ImageExtension extends LexisExtension {
                 return;
               }
 
+              this.#cancelPendingUploadWarning(insertedNodeKey);
+
               this.editor.lexicalEditor.update(() => {
                 const node = $getNodeByKey(insertedNodeKey);
                 if (!$isImageNode(node)) {
@@ -646,6 +718,8 @@ export class ImageExtension extends LexisExtension {
               if (!insertedNodeKey) {
                 return;
               }
+
+              this.#cancelPendingUploadWarning(insertedNodeKey);
 
               this.editor.lexicalEditor.update(() => {
                 const node = $getNodeByKey(insertedNodeKey);

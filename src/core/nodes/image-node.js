@@ -357,6 +357,10 @@ export class ImageNode extends DecoratorNode {
     return caption || "";
   }
 
+  getUploadStatus() {
+    return this.getLatest().__upload.status;
+  }
+
   /** @param {{url?: string, description?: string|null, source?: string|null}} payload */
   setImagePayload(payload) {
     const writable = this.getWritable();
