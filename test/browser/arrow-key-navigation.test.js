@@ -97,11 +97,15 @@ describe("arrow key navigation across decorator nodes", {
     await new Promise((r) => setTimeout(r, 60));
 
     // Sanity-check the fixture actually built the shape these tests assume.
+    // Excludes Lexical's invisible `[data-lexical-decorator-boundary]`
+    // marker element (0.50+), which isn't one of our nodes.
     const shape = await page.evaluate(() => {
       const root = document.querySelector(
         'lexis-editor [data-slot="editor-content"]',
       );
-      return Array.from(root.children).map((el) => el.tagName.toLowerCase());
+      return Array.from(root.children)
+        .filter((el) => !el.hasAttribute("data-lexical-decorator-boundary"))
+        .map((el) => el.tagName.toLowerCase());
     });
     assert.deepEqual(
       shape,
@@ -287,17 +291,24 @@ describe("arrow key navigation across decorator nodes", {
     await new Promise((r) => setTimeout(r, 30));
 
     await page.keyboard.press("ArrowDown");
+    // Lexical (0.50+) renders an invisible, zero-size marker element
+    // (`[data-lexical-decorator-boundary]`) as a sibling next to whichever
+    // decorator currently has NodeSelection — exclude it, it isn't one of
+    // our nodes.
+    const contentSelector =
+      '[data-slot="editor-content"] > *:not([data-lexical-decorator-boundary])';
     await page.waitForFunction(
-      () =>
-        document.querySelectorAll('[data-slot="editor-content"] > *').length ===
-        2,
+      (selector) => document.querySelectorAll(selector).length === 2,
       { timeout: 2000 },
+      contentSelector,
     );
 
-    const shape = await page.evaluate(() =>
-      Array.from(
-        document.querySelectorAll('[data-slot="editor-content"] > *'),
-      ).map((el) => el.tagName.toLowerCase()),
+    const shape = await page.evaluate(
+      (selector) =>
+        Array.from(document.querySelectorAll(selector)).map((el) =>
+          el.tagName.toLowerCase(),
+        ),
+      contentSelector,
     );
 
     assert.deepEqual(

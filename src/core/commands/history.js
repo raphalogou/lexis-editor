@@ -11,7 +11,7 @@ export const commands = [
     icon: COMMAND_ICONS.undo,
 
     isDisabled(editor) {
-      return editor.historyState.undoStack.length === 0;
+      return !editor.canUndo.peek();
     },
 
     execute(lexicalEditor) {
@@ -24,7 +24,7 @@ export const commands = [
     icon: COMMAND_ICONS.redo,
 
     isDisabled(editor) {
-      return editor.historyState.redoStack.length === 0;
+      return !editor.canRedo.peek();
     },
 
     execute(lexicalEditor) {

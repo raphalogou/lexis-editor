@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.2.1] - 2026-09-13
+
+Dependency upgrade and internal cleanup. No consumer-facing API changes.
+
+### Changed
+
+- **Upgraded `lexical` and all `@lexical/*` packages from `0.42.0` to `0.50.0`.** Verified against the full test suite plus manual checks of undo/redo and code blocks. The only change required was one test assertion accounting for a new internal Lexical DOM marker (`[data-lexical-decorator-boundary]`) rendered next to a selected decorator node — it isn't part of any documented Lexical API and doesn't affect this library's own DOM lookups (all key-based via `getElementByKey`) or its CSS.
+- `Editor.canUndo` / `Editor.canRedo` (both `ReadonlySignal<boolean>`) replace the previous `Editor.historyState` field, now that `HistoryExtension` exposes them directly (new in Lexical 0.50). The toolbar's undo/redo disabled state no longer depends on `HistoryState`'s internal mutation semantics.
+- Added `@lexical/selection` as an explicit dependency — it was already imported in `src/core/utils.js` but had only ever resolved because another `@lexical/*` package happened to pull it in transitively.
+- Upgraded `dompurify` (3.4.0 → 3.4.15), `marked` (18.0.0 → 18.0.13), `@biomejs/biome` (2.4.10 → 2.5.13), and `vite` (8.0.1 → 8.3.0). No breaking changes encountered.
+
+### Fixed
+
+- `npm run dev` could fail with `Failed to run dependency scan ... react/jsx-dev-runtime not installed`. Vite's dev-server dependency scanner runs its own JSX transform pass that doesn't inherit this project's `oxc.jsx` config and was defaulting to a React JSX runtime assumption — this project has no React dependency at all. Fixed by mirroring the same JSX config under `optimizeDeps.rolldownOptions.transform.jsx` in `vite.config.js`.
+
 ## [0.2.0] - 2026-09-13
 
 Builds on the released [0.1.5](https://git.holohc.org/ralogou/-/packages/npm/@void%2Flexis-editor/0.1.5). No breaking changes — existing configs, attributes, and the public JS API are unaffected.

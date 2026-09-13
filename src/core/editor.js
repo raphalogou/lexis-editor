@@ -50,8 +50,11 @@ export class Editor {
   /** @type {import('lexical').LexicalEditor} */
   lexicalEditor = null;
 
-  /** @type {import('@lexical/history').HistoryState} */
-  historyState = null;
+  /** @type {import('@lexical/extension').ReadonlySignal<boolean>|null} */
+  canUndo = null;
+
+  /** @type {import('@lexical/extension').ReadonlySignal<boolean>|null} */
+  canRedo = null;
 
   /** @type {import('../elements/editor').LexisEditorElement|null} */
   hostElement = null;
@@ -373,8 +376,9 @@ export class Editor {
         afterRegistration: (lexicalEditor, _, state) => {
           lexicalEditor.setRootElement(rootEl);
 
-          const extOutput = state.getDependency(HistoryExtension);
-          this.historyState = extOutput.output.historyState.peek();
+          const historyOutput = state.getDependency(HistoryExtension).output;
+          this.canUndo = historyOutput.canUndo;
+          this.canRedo = historyOutput.canRedo;
 
           this.#listeners.track(
             lexicalEditor.registerUpdateListener(

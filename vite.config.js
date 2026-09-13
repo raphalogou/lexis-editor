@@ -17,6 +17,18 @@ export default defineConfig({
       "jsx-runtime": r("src/helper"),
     },
   },
+  optimizeDeps: {
+    rolldownOptions: {
+      transform: {
+        jsx: {
+          pragma: "h",
+          pragmaFrag: "Fragment",
+          importSource: "jsx-runtime",
+          development: false,
+        },
+      },
+    },
+  },
   build: {
     cssCodeSplit: true,
     lib: {
