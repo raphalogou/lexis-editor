@@ -4,14 +4,21 @@ import {
   $getNodeByKey,
   $getRoot,
   $getSelection,
+  $isElementNode,
   $isNodeSelection,
+  $isRangeSelection,
+  $isTextNode,
   $setSelection,
   CLICK_COMMAND,
   COMMAND_PRIORITY_EDITOR,
+  COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
+  DRAGOVER_COMMAND,
+  DROP_COMMAND,
   defineExtension,
   isDOMNode,
   mergeRegister,
+  PASTE_COMMAND,
   SELECTION_CHANGE_COMMAND,
 } from "lexical";
 import { parseSvgIcon } from "../../helper/html";
@@ -119,6 +126,73 @@ export class ImageExtension extends LexisExtension {
               return false;
             },
             COMMAND_PRIORITY_EDITOR,
+          ),
+
+          lexicalEditor.registerCommand(
+            PASTE_COMMAND,
+            (event) => {
+              if (!(event instanceof ClipboardEvent)) {
+                return false;
+              }
+
+              const file = getFirstImageFile(event.clipboardData);
+              if (!file) {
+                return false;
+              }
+
+              event.preventDefault();
+              // PASTE_COMMAND fires from inside an active editor update;
+              // defer so the insert-image command's own update isn't nested
+              // inside it (nested updates here corrupt reconciliation).
+              queueMicrotask(() => this.#insertFileAsImage(file));
+              return true;
+            },
+            COMMAND_PRIORITY_HIGH,
+          ),
+
+          // dragover must accept any file drag (individual file types aren't
+          // readable until drop) so the browser allows the drop to happen.
+          lexicalEditor.registerCommand(
+            DRAGOVER_COMMAND,
+            (event) => {
+              if (!event.dataTransfer?.types.includes("Files")) {
+                return false;
+              }
+
+              event.preventDefault();
+              return true;
+            },
+            COMMAND_PRIORITY_HIGH,
+          ),
+
+          lexicalEditor.registerCommand(
+            DROP_COMMAND,
+            (event) => {
+              if (!event.dataTransfer?.types.includes("Files")) {
+                return false;
+              }
+
+              event.preventDefault();
+
+              const file = getFirstImageFile(event.dataTransfer);
+              if (!file) {
+                logger.debug("Ignoring non-image file drop");
+                return true;
+              }
+
+              // DROP_COMMAND fires from inside an active editor update;
+              // defer both the selection move and the insert so neither
+              // nests inside it (nested updates here corrupt reconciliation).
+              const { clientX, clientY } = event;
+              queueMicrotask(() => {
+                lexicalEditor.update(() => {
+                  this.#selectDropTarget(clientX, clientY);
+                });
+                this.#insertFileAsImage(file);
+              });
+              return true;
+            },
+            COMMAND_PRIORITY_HIGH,
           ),
 
           lexicalEditor.registerUpdateListener(() => {
@@ -477,7 +551,23 @@ export class ImageExtension extends LexisExtension {
       return;
     }
 
-    // We're about to insert an image file. Let's notify the consumer
+    this.#insertFileAsImage(file, {
+      description: this.#readActiveDescription(),
+    });
+    this.element?.hide();
+  }
+
+  /**
+   * Inserts a file as an image node: dispatches the cancelable
+   * `editor:image:insert` event, shows an optimistic blob preview, then
+   * dispatches `editor:image:upload` so the consumer can resolve it to a
+   * durable URL. Shared by the popover file picker, clipboard paste, and
+   * drag-and-drop.
+   * @param {File} file
+   * @param {{description?: string}} [options]
+   * @returns {boolean} whether the image was inserted (false if a consumer cancelled it)
+   */
+  #insertFileAsImage(file, { description = "" } = {}) {
     const event = new CustomEvent("editor:image:insert", {
       bubbles: true,
       cancelable: true,
@@ -486,14 +576,18 @@ export class ImageExtension extends LexisExtension {
     this.hostElement.dispatchEvent(event);
 
     if (event.defaultPrevented) {
-      // Don't proceed to image insertion if default is `preventDefault` was called and hide the popover
-      logger.debug("Image inserted cancelled");
-      this.element.hide();
-      return;
+      logger.debug("Image insert cancelled");
+      return false;
     }
 
+    this.#ensureSelection();
+
     const previewUrl = URL.createObjectURL(file);
-    this.#insertImageWithData({ url: previewUrl, source: IMAGE_SOURCE.FILE });
+    this.editor.runCommand("insert-image", {
+      url: previewUrl,
+      description,
+      source: IMAGE_SOURCE.FILE,
+    });
 
     const insertedNodeKey = this.#lastInsertedNode?.getKey() || null;
     if (insertedNodeKey) {
@@ -570,6 +664,8 @@ export class ImageExtension extends LexisExtension {
         },
       }),
     );
+
+    return true;
   }
 
   #insertImageFromUrl() {
@@ -590,15 +686,21 @@ export class ImageExtension extends LexisExtension {
     }
 
     this.#urlInput.setCustomValidity("");
-    this.#insertImageWithData({ url, source: IMAGE_SOURCE.URL });
+    this.#insertImageWithData({
+      url,
+      description: this.#readActiveDescription(),
+      source: IMAGE_SOURCE.URL,
+    });
   }
 
-  #insertImageWithData({ url, source }) {
-    const descriptionInput = this.#activeTabPanel.querySelector(
+  #readActiveDescription() {
+    const descriptionInput = this.#activeTabPanel?.querySelector(
       'input[name="description"]',
     );
-    const description = descriptionInput?.value.trim() || "";
+    return descriptionInput?.value.trim() || "";
+  }
 
+  #insertImageWithData({ url, description, source }) {
     this.editor.runCommand("insert-image", {
       url,
       description,
@@ -606,6 +708,51 @@ export class ImageExtension extends LexisExtension {
     });
 
     this.element?.hide();
+  }
+
+  /**
+   * Guarantees a valid selection exists before an image is inserted from a
+   * context that may not have one — e.g. a file pasted or dropped before the
+   * editor was ever focused. Must run as its own editor update *before* the
+   * insert-image command's update: establishing the fallback selection in
+   * the same update pass as the node insertion corrupts reconciliation.
+   */
+  #ensureSelection() {
+    this.editor.lexicalEditor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection) || $isNodeSelection(selection)) {
+        return;
+      }
+
+      $getRoot().selectEnd();
+    });
+  }
+
+  /**
+   * Moves the Lexical selection to the drop point so a dropped image lands
+   * where the cursor actually is, rather than wherever the selection last
+   * happened to be.
+   */
+  #selectDropTarget(x, y) {
+    const domRange = getCaretRangeFromPoint(x, y);
+    if (!domRange) {
+      return;
+    }
+
+    const targetNode = $getNearestNodeFromDOMNode(domRange.container);
+    if (!targetNode) {
+      return;
+    }
+
+    if ($isTextNode(targetNode)) {
+      const offset = Math.min(domRange.offset, targetNode.getTextContentSize());
+      targetNode.select(offset, offset);
+      return;
+    }
+
+    if ($isElementNode(targetNode)) {
+      targetNode.selectEnd();
+    }
   }
 
   #selectImageNode(imageNode) {
@@ -660,4 +807,33 @@ export class ImageExtension extends LexisExtension {
 
     this.#previouslySelectedKeys = currentKeys;
   }
+}
+
+/** @param {DataTransfer | null | undefined} dataTransfer */
+function getFirstImageFile(dataTransfer) {
+  if (!dataTransfer?.files?.length) {
+    return null;
+  }
+
+  return (
+    Array.from(dataTransfer.files).find((file) =>
+      file.type.startsWith("image/"),
+    ) ?? null
+  );
+}
+
+/**
+ * @param {number} x
+ * @param {number} y
+ * @returns {{container: Node, offset: number} | null}
+ */
+function getCaretRangeFromPoint(x, y) {
+  if (typeof document.caretPositionFromPoint === "function") {
+    const position = document.caretPositionFromPoint(x, y);
+    return position?.offsetNode
+      ? { container: position.offsetNode, offset: position.offset }
+      : null;
+  }
+
+  return null;
 }
