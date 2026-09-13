@@ -11,10 +11,8 @@ import {
   $createParagraphNode,
   $getSelection,
   $isDecoratorNode,
-  $isElementNode,
   $isNodeSelection,
   $isRangeSelection,
-  $isTextNode,
   $setSelection,
   COMMAND_PRIORITY_HIGH,
   defineExtension,
@@ -119,45 +117,4 @@ export class RichTextExtension extends LexisExtension {
       ],
     });
   }
-}
-
-function selectNodeStart(node) {
-  let targetNode = node;
-
-  while ($isElementNode(targetNode)) {
-    const firstChild = targetNode.getFirstChild();
-    if (!firstChild) {
-      break;
-    }
-
-    targetNode = firstChild;
-  }
-
-  if ($isTextNode(targetNode)) {
-    targetNode.select(0, 0);
-    return;
-  }
-
-  targetNode.selectStart();
-}
-
-function selectNodeEnd(node) {
-  let targetNode = node;
-
-  while ($isElementNode(targetNode)) {
-    const lastChild = targetNode.getLastChild();
-    if (!lastChild) {
-      break;
-    }
-
-    targetNode = lastChild;
-  }
-
-  if ($isTextNode(targetNode)) {
-    const size = targetNode.getTextContentSize();
-    targetNode.select(size, size);
-    return;
-  }
-
-  targetNode.selectEnd();
 }

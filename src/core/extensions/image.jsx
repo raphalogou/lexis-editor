@@ -548,7 +548,7 @@ export class ImageExtension extends LexisExtension {
                 node.updateProgress(progress);
               });
             },
-            error: ({ _code, message }) => {
+            error: (message) => {
               if (!insertedNodeKey) {
                 return;
               }
