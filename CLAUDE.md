@@ -9,14 +9,25 @@ npm install          # Install dependencies
 npm run dev           # Vite dev server (uses index.html as a live demo/playground)
 npm run build          # Production library build (Vite lib mode, ES + CJS)
 npm run preview        # Preview the production build
-npm run build:check     # Biome check (lint + format check) on src/
-npm run lint          # Biome lint on src/
-npm run format         # Biome format on src/
+npm run build:check     # Biome check (lint + format check) on src/ and test/
+npm run lint          # Biome lint on src/ and test/
+npm run format         # Biome format on src/ and test/
+npm test             # Full test suite (unit + real-browser integration tests)
 ```
 
-There is no automated test suite configured. Validate behavior manually via `npm run dev` and the demo in `index.html` — pay particular attention to toolbar state, selection/keyboard transitions, and the image upload lifecycle, since these are the most regression-prone areas (see Hotspots below).
+To run a single check, scope Biome to a path: `npx biome check src/core/extensions/image.jsx`. To run a single test file, pass it directly: `node --test test/browser/image-clipboard.test.js`.
 
-To run a single check, scope Biome to a path: `npx biome check src/core/extensions/image.jsx`.
+### Tests
+
+`test/unit/` holds plain Node (`node --test`) tests for pure logic — no browser needed. `test/browser/` drives a real headless Chromium (`puppeteer-core`, pointed at whatever Chrome/Chromium is already installed — no bundled-browser download, so no network dependency) against a throwaway Vite dev server serving `test/fixtures/`. This exists because contentEditable, native Selection/Range, `DataTransfer`/`ClipboardEvent`/`DragEvent`, and `document.caretRangeFromPoint` aren't faithfully implemented in jsdom — Lexical genuinely needs a real browser to test against. Shared setup lives in `test/browser/helpers.mjs` (`startTestEnvironment()`, `clickIntoEditor()`).
+
+If no Chromium/Chrome binary is found (checks `PUPPETEER_EXECUTABLE_PATH` then common install paths), the browser suites skip themselves with a clear reason rather than failing — set `PUPPETEER_EXECUTABLE_PATH` if the auto-detected paths don't match your machine.
+
+When adding a browser test that needs a Lexical `$`-prefixed function (`$getRoot`, etc.) inside `page.evaluate()`, note that a bare `import("lexical")` there fails — Vite only rewrites bare specifiers for files it actually transforms. Re-export what you need from a small file under `test/fixtures/` (see `lexical-utils.js`) and dynamically import that instead.
+
+Two flakiness traps worth knowing before writing more of these tests (both hit while writing `arrow-key-navigation.test.js`):
+- **Don't position a test's starting caret by clicking pixel coordinates from `getBoundingClientRect()`** if anything nearby has async/layout-dependent sizing (e.g. an `<img>` with a URL that never resolves in a test). The click can land somewhere other than where you measured. Set the selection directly via Lexical's `$`-API instead (`node.selectStart()`/`.selectEnd()` inside `lexicalEditor.update()`, then `lexicalEditor.focus()`) — reserve real clicks for tests where the click itself is the thing under test.
+- **Don't bracket two back-to-back key presses with a fixed `setTimeout` delay.** Poll for the actual expected DOM/selection state with `page.waitForFunction(...)` instead — a delay that's "long enough" on one run is a flake waiting to happen on another.
 
 ## Architecture
 
@@ -52,5 +63,6 @@ To run a single check, scope Biome to a path: `npx biome check src/core/extensio
 
 ### Current hotspots
 
-- Decorator-node ArrowUp/ArrowDown selection behavior (`src/core/extensions/rich-text.js`, code block navigation in `src/core/extensions/code-block.js`) is the most regression-prone area in the codebase — it has been fixed multiple times. Test keyboard navigation around images/decorators and code blocks manually after touching selection logic.
+- Decorator-node ArrowUp/ArrowDown selection behavior (`src/core/extensions/rich-text.js`, code block navigation in `src/core/extensions/code-block.js`) is the most regression-prone area in the codebase — it has been fixed multiple times, and still has no automated coverage (`test/`). Test keyboard navigation around images/decorators and code blocks manually after touching selection logic, and consider adding a browser test alongside any fix here.
+- Anything that inserts a Lexical node from inside a command handler that Lexical itself invoked mid-update (paste/drop are the known case in `ImageExtension`) must not call a second nested `lexicalEditor.update()` synchronously — it corrupts reconciliation. Defer via `queueMicrotask`, as the paste/drop handlers do, and see `test/browser/image-clipboard.test.js`'s "no prior click/focus" test for why this matters.
 - Image caption editing, popover source-mode state (Upload vs. From URL), and blob URL persistence are an active area of change — see `PROJECT_STATE.md` for the current state of in-progress image work if it still reflects reality (verify against the code, it can go stale).

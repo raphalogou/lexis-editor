@@ -23,9 +23,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "biome lint src/",
-    "format": "biome format src/",
-    "build:check": "biome check src/"
+    "lint": "biome lint src/ test/",
+    "format": "biome format src/ test/",
+    "build:check": "biome check src/ test/",
+    "test": "node --test \"test/**/*.test.js\""
   },
   "dependencies": {
     "@lexical/code": "^0.42.0",
@@ -45,6 +46,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
+    "puppeteer-core": "^25.10.0",
     "sanitize.css": "^13.0.0",
     "vite": "^8.0.1"
   }

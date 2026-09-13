@@ -33,10 +33,11 @@
   - `npm install`
   - `npm run dev`
 - Quality gates used in this repo:
-  - `npm run build:check` (Biome check on `src/`)
+  - `npm run build:check` (Biome check on `src/` and `test/`)
   - `npm run lint`
   - `npm run build`
-- No automated test suite is configured in `package.json`; validate behavior manually in the demo page (`index.html`) and focus on toolbar state, selection transitions, and image upload lifecycle.
+  - `npm test` (unit tests via `node --test`, plus real-browser integration tests via `puppeteer-core` against a throwaway Vite dev server — see `test/browser/helpers.mjs`; jsdom can't faithfully test contentEditable/Selection/DataTransfer/caretRangeFromPoint, so these use an actual Chromium/Chrome already on the machine, no download)
+- The arrow-key/decorator navigation hotspot now has automated coverage (`test/browser/arrow-key-navigation.test.js`), but still validate toolbar state, selection transitions, and the image upload lifecycle manually too — automated coverage is real but not exhaustive.
 
 ## Integration points for consumers
 - Listen to editor lifecycle/events on `lexis-editor`: `editor:initialize`, `editor:ready`, `editor:change`, `editor:focus`, `editor:blur`.
