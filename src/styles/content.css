@@ -96,22 +96,32 @@
     background-color: var(--lexis-table-selection-bg);
   }
 
+  /* The cell the caret is currently in, independent of any action-hover
+     state below — declared first so a hover ring (same box-shadow
+     property) still wins the cascade when both apply to the same cell. */
+  .lexis-table-active-cell {
+    box-shadow: inset 0 0 0 2px var(--lexis-selected-outline-color);
+  }
+
   .lexis-table-target-table,
   .lexis-table-target-row,
   .lexis-table-target-cell {
     background-color: var(--lexis-table-danger-bg);
   }
 
-  .lexis-table-target-row td,
-  .lexis-table-target-row th {
-    border-color: var(--lexis-table-danger-border);
+  /* An inset ring (not border-color) so every highlighted cell paints its
+     own indicator regardless of border-collapse conflict resolution with an
+     unhighlighted neighbor. Applied directly on each leaf cell — not a
+     shared <tr>/<table> — so it also can't end up painted behind a cell's
+     own background (e.g. the header row's) the way box-shadow on an
+     ancestor would. */
+  .lexis-table-target-cell {
+    box-shadow: inset 0 0 0 2px var(--lexis-table-danger-border);
   }
 
-  .lexis-table-target-cell,
-  .lexis-table-target-table {
-    border-color: var(--lexis-table-danger-border);
-  }
-
+  /* Only the edge where the new row/column will be inserted — not a ring
+     around the whole row/column. Marked per-cell (see the JS) rather than
+     on a shared <tr>/<table>, for the same reason as the ring above. */
   .lexis-table-insert-after-bottom {
     box-shadow: inset 0 -2px 0 0 var(--lexis-table-insert-color);
   }

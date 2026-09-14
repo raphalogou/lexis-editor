@@ -56,6 +56,9 @@ export class TableExtension extends LexisExtension {
   /** @type {HTMLElement[]} */
   #highlightedElements = [];
 
+  /** @type {HTMLElement | null} */
+  #activeCellElement = null;
+
   get lexicalExtension() {
     return defineExtension({
       name: "lexis/table",
@@ -114,7 +117,9 @@ export class TableExtension extends LexisExtension {
       return;
     }
 
-    this.#lastVisibleCellKey = cellNode.getKey();
+    const cellKey = cellNode.getKey();
+    this.#lastVisibleCellKey = cellKey;
+    this.#setActiveCellElement(lexicalEditor.getElementByKey(cellKey));
 
     const tableNode = $getTableNodeFromLexicalNodeOrThrow(cellNode);
     const tableKey = tableNode.getKey();
@@ -163,9 +168,21 @@ export class TableExtension extends LexisExtension {
     this.#lastVisibleCellKey = "";
     this.#lastVisibleTableKey = "";
     this.#clearHighlights();
+    this.#setActiveCellElement(null);
 
     if (!this.#controls) return;
     this.#controls.hidden = true;
+  }
+
+  /**
+   * @param {HTMLElement | null} cellElement
+   */
+  #setActiveCellElement(cellElement) {
+    if (this.#activeCellElement === cellElement) return;
+
+    this.#activeCellElement?.classList.remove("lexis-table-active-cell");
+    this.#activeCellElement = cellElement ?? null;
+    this.#activeCellElement?.classList.add("lexis-table-active-cell");
   }
 
   /**
@@ -219,9 +236,25 @@ export class TableExtension extends LexisExtension {
     }
 
     this.#listeners.track(
+      // A click/mousedown on a toolbar-style button elsewhere within the
+      // host doesn't blur (LexisEditorElement only fires editor:blur once
+      // focus truly leaves the host), but this still catches focus moving
+      // to an unrelated part of the page while the table remains selected.
       registerEventListener(hostElement, "editor:blur", () =>
         this.#hideControls(),
       ),
+      // Also catches OS/window-level focus loss (alt-tab, devtools, another
+      // browser tab) — document.activeElement never changes in that case,
+      // so no focusout/editor:blur fires at all.
+      registerEventListener(window, "blur", () => this.#hideControls()),
+      // Re-clicking back into the same cell after either of the above can
+      // leave the browser selection unchanged, so no selectionchange fires
+      // to naturally re-show the panel — force a re-sync on refocus.
+      registerEventListener(hostElement, "editor:focus", () => {
+        const lexicalEditor = this.editor?.lexicalEditor;
+        if (!lexicalEditor) return;
+        lexicalEditor.read(() => this.#syncControls(lexicalEditor));
+      }),
     );
 
     hostElement.append(controls);
@@ -330,11 +363,17 @@ export class TableExtension extends LexisExtension {
         }
         case "insert-row-after": {
           const rowNode = $getTableRowNodeFromTableCellNodeOrThrow(cellNode);
-          this.#markElement(
-            lexicalEditor,
-            rowNode.getKey(),
-            "lexis-table-insert-after-bottom",
-          );
+          // Marked on each cell rather than the <tr> itself: box-shadow on
+          // a table-row is painted behind its cells, so it gets hidden by
+          // any cell with an opaque background (e.g. the header row).
+          // Marking each cell's own bottom edge instead avoids that.
+          for (const cell of rowNode.getChildren()) {
+            this.#markElement(
+              lexicalEditor,
+              cell.getKey(),
+              "lexis-table-insert-after-bottom",
+            );
+          }
           break;
         }
         case "insert-column-after": {
@@ -384,6 +423,7 @@ export class TableExtension extends LexisExtension {
   dispose() {
     this.#listeners.cleanup();
     this.#clearHighlights();
+    this.#setActiveCellElement(null);
 
     if (this.#controls?.isConnected) {
       this.#controls.remove();

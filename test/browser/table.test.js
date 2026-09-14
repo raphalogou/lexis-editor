@@ -771,6 +771,71 @@ describe("table support", {
     await page.close();
   });
 
+  test("the currently selected cell keeps a standing active-cell marker that follows the caret", async () => {
+    const { page, pageErrors } = await env.newPage();
+    await clickIntoEditor(page);
+
+    await page.evaluate(async () => {
+      const editorEl = document.querySelector("lexis-editor");
+      editorEl.value = "before\n\n| a | b |\n| --- | --- |\n| 1 | 2 |";
+      await new Promise((r) => setTimeout(r, 60));
+    });
+
+    const before = await page.evaluate(
+      () => document.querySelectorAll(".lexis-table-active-cell").length,
+    );
+    assert.equal(before, 0, "no active cell before any cell is focused");
+
+    const firstCellText = await page.evaluate(async () => {
+      const { $getRoot } = await import("/test/fixtures/lexical-utils.js");
+      const editorEl = document.querySelector("lexis-editor");
+      editorEl.editor.lexicalEditor.update(() => {
+        const table = $getRoot()
+          .getChildren()
+          .find((n) => n.getType() === "table");
+        table.getChildren()[0].getChildren()[0].selectStart();
+      });
+      await new Promise((r) => setTimeout(r, 60));
+      const active = document.querySelector(".lexis-table-active-cell");
+      return active?.textContent.trim();
+    });
+    assert.equal(firstCellText, "a");
+
+    const afterMove = await page.evaluate(async () => {
+      const { $getRoot } = await import("/test/fixtures/lexical-utils.js");
+      const editorEl = document.querySelector("lexis-editor");
+      editorEl.editor.lexicalEditor.update(() => {
+        const table = $getRoot()
+          .getChildren()
+          .find((n) => n.getType() === "table");
+        table.getChildren()[1].getChildren()[1].selectStart();
+      });
+      await new Promise((r) => setTimeout(r, 60));
+      return {
+        count: document.querySelectorAll(".lexis-table-active-cell").length,
+        text: document
+          .querySelector(".lexis-table-active-cell")
+          ?.textContent.trim(),
+      };
+    });
+    assert.equal(afterMove.count, 1, "marker moves rather than accumulating");
+    assert.equal(afterMove.text, "2");
+
+    const afterLeaving = await page.evaluate(async () => {
+      const { $getRoot } = await import("/test/fixtures/lexical-utils.js");
+      const editorEl = document.querySelector("lexis-editor");
+      editorEl.editor.lexicalEditor.update(() => {
+        $getRoot().getFirstChild().selectStart();
+      });
+      await new Promise((r) => setTimeout(r, 60));
+      return document.querySelectorAll(".lexis-table-active-cell").length;
+    });
+    assert.equal(afterLeaving, 0, "cleared once the caret leaves the table");
+    assert.deepEqual(pageErrors, []);
+
+    await page.close();
+  });
+
   test("hovering a control highlights the row/column/table it will affect", async () => {
     const { page, pageErrors } = await env.newPage();
     await clickIntoEditor(page);
@@ -819,7 +884,7 @@ describe("table support", {
       "lexis-table-target-row": 0,
       "lexis-table-target-cell": 0,
       "lexis-table-target-table": 0,
-      "lexis-table-insert-after-bottom": 1,
+      "lexis-table-insert-after-bottom": 3,
       "lexis-table-insert-after-right": 0,
     });
 
