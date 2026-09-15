@@ -3,16 +3,20 @@
   "version": "0.2.1",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "types"
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.esm.js",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./types/index.d.ts",
       "import": "./dist/index.esm.js",
       "require": "./dist/index.cjs"
     },
     "./core": {
+      "types": "./types/core.d.ts",
       "import": "./dist/core.esm.js",
       "require": "./dist/core.cjs"
     },
