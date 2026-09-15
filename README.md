@@ -86,12 +86,42 @@ That's it. The editor handles form submission, validation, and content serializa
 </html>
 ```
 
-### Image Upload Handler
+See [Images](#images) for the full upload/insert/remove event flow.
+
+## Features
+
+| Text | Blocks | Media | Output |
+|------|--------|-------|--------|
+| Bold, italic, underline | Headings (1-4) | Images (URL or file, paste/drag-and-drop) | Markdown |
+| Strikethrough, inline code | Blockquotes | Links with validation | Sanitized HTML |
+| — | Code blocks (Prism) | — | — |
+| — | Bullet/numbered lists | — | — |
+| — | Horizontal dividers | — | — |
+| — | Tables (GFM markdown) | — | — |
+
+## Images
+
+Users can insert an image three ways — the toolbar's image picker (URL or file), pasting from the clipboard, or dragging a file into the editor. All three go through the same three-event lifecycle:
+
+1. **`editor:image:insert`** fires first, with `detail.file` — the picked/pasted/dropped `File`. Call `event.preventDefault()` to reject it before anything is inserted.
+2. **`editor:image:upload`** fires immediately after a file-based insert is accepted. An optimistic blob preview is already showing; resolve `detail.upload` to replace it with a durable URL.
+3. **`editor:image:remove`** fires whenever an image node is deleted from the document (backspace, cut, etc.), with the image's last known `url`/`description`, useful for cleaning up server-side storage.
+
+### Validating inserts
 
 ```javascript
-import '@void/lexis-editor';
+document.addEventListener('editor:image:insert', (event) => {
+  const { file } = event.detail;
 
-// Handle image file uploads
+  if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
+    event.preventDefault(); // rejected — nothing is inserted
+  }
+});
+```
+
+### Uploading files
+
+```javascript
 document.addEventListener('editor:image:upload', (event) => {
   const { file, upload } = event.detail;
 
@@ -122,41 +152,101 @@ document.addEventListener('editor:image:upload', (event) => {
 });
 ```
 
-## Features
+Leaving `editor:image:upload` unhandled isn't silently ignored, the console warns after a few seconds that an image is still "uploading", since without a resolved URL its blob preview won't survive a reload.
 
-| Text | Blocks | Media | Output |
-|------|--------|-------|--------|
-| Bold, italic, underline | Headings (1-4) | Images (URL or file) | Markdown |
-| Strikethrough, inline code | Blockquotes | Links with validation | Sanitized HTML |
-| — | Code blocks (Prism) | — | — |
-| — | Bullet/numbered lists | — | — |
-| — | Horizontal dividers | — | — |
+Pasting an image from the clipboard or dragging one into the editor goes through this exact same flow, no extra wiring needed to support them.
+
+### Cleaning up on removal
+
+```javascript
+document.addEventListener('editor:image:remove', (event) => {
+  const { url, description } = event.detail;
+
+  if (url) {
+    fetch(`/api/upload?url=${encodeURIComponent(url)}`, { method: 'DELETE' });
+  }
+});
+```
+
+### Inserting programmatically
+
+Bypasses the picker/paste/drag flow entirely, no `editor:image:insert`/`editor:image:upload` events fire, since there's no file to insert or upload:
+
+```javascript
+editor.runCommand('insert-image', {
+  url: 'https://example.com/photo.png',
+  description: 'A photo',
+});
+```
+
+## Tables
+
+Insert a table via the `insert-table` toolbar token/command, it starts as a 3×3 grid with a header row. Tables round-trip through markdown as GFM pipe tables (`| a | b |`), including inline formatting (bold, links, code) inside cells.
+
+When the caret is inside a table cell, a floating panel appears above the table with row/column controls, add/remove row, add/remove column, delete table. Hovering a control previews what it'll affect: red for removals, blue for the edge where a new row/column will be inserted.
+
+**Current limitations**: no merged cells, no column alignment (`:--`/`--:`), and typing a pipe-delimited table by hand isn't recognized until the divider row (`| --- |`) is complete, only inserting, pasting, or loading markdown creates a real table.
+
+## Readonly & Disabled
+
+```html
+<lexis-editor readonly value="# Locked content"></lexis-editor>
+```
+
+`readonly` makes the editor non-editable while still submitting its value with the form. `disabled` behaves the same way but also excludes the field from form submission entirely, like any other form control, it's also set automatically when the editor sits inside a `<fieldset disabled>`:
+
+```html
+<fieldset disabled>
+  <lexis-editor name="content"></lexis-editor>
+</fieldset>
+```
+
+While non-editable, the toolbar's controls are all disabled and stop reflecting live selection state.
 
 ## Configuration
 
-Configure via the `editor:initialize` event:
+### Initialization Lifecycle
+
+Two events bracket setup:
 
 ```javascript
-element.addEventListener('editor:initialize', (e) => {
+const editor = document.querySelector('lexis-editor');
+
+// 1. Fires before the editor instance is built, the only point at which
+//    configure() has any effect.
+editor.addEventListener('editor:initialize', (e) => {
   e.detail.configure({
-    markdown: true,           // Output format: true=markdown, false=HTML
-    extensionMode: 'append',  // 'append' or 'replace'
-    extensions: [],           // Custom LexisExtension classes
-    lexical: {
-      namespace: '@my/editor',
-      theme: {                 // Custom CSS class mappings
-        text: { bold: 'my-bold' }
-      }
-    },
-    toolbar: {
-      template: 'format | list link',
-      groups: { list: ['bullet-list', 'number-list' ]}               // Named command groups
-    }
+    markdown: true,
+    toolbar: { template: 'format | list link' },
   });
+});
+
+// 2. Fires once the editor instance exists and is attached.
+editor.addEventListener('editor:ready', (e) => {
+  const { editor: instance } = e.detail; // same object as `editor.editor`
+  console.log('Ready with commands:', Object.keys(instance.commands));
 });
 ```
 
 ### Available Options
+
+```javascript
+e.detail.configure({
+  markdown: true,           // Output format: true=markdown, false=HTML
+  extensionMode: 'append',  // 'append' or 'replace'
+  extensions: [],           // Custom LexisExtension classes
+  lexical: {
+    namespace: '@my/editor',
+    theme: {                 // Custom CSS class mappings
+      text: { bold: 'my-bold' }
+    }
+  },
+  toolbar: {
+    template: 'format | list link',
+    groups: { list: ['bullet-list', 'number-list' ]}               // Named command groups
+  }
+});
+```
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -165,6 +255,76 @@ element.addEventListener('editor:initialize', (e) => {
 | `extensionMode` | string | `'append'` | How to merge extensions |
 | `toolbar` | object | `{}` | Toolbar template and groups |
 | `lexical` | object | `{}` | Lexical namespace and theme |
+
+### Presets
+
+The `preset` attribute picks which extension/toolbar defaults `extensions`/`toolbar` build on top of:
+
+```html
+<!-- Default: markdown output, all built-in extensions (tables, images, code blocks, links, lists…) -->
+<lexis-editor></lexis-editor>
+
+<!-- "simple": HTML output, only bold/italic/underline/link/undo/redo -->
+<lexis-editor preset="simple"></lexis-editor>
+```
+
+### Programmatic Setup
+
+Everything above also works without writing any `<lexis-editor>` markup:
+
+```javascript
+import '@void/lexis-editor';
+
+const editor = document.createElement('lexis-editor');
+editor.setAttribute('name', 'content'); // needed for FormData submission
+
+editor.addEventListener('editor:initialize', (e) => {
+  e.detail.configure({ toolbar: { template: 'bold italic ~ undo redo' } });
+});
+
+document.body.append(editor);
+```
+
+### Custom Extensions
+
+Add features by subclassing `LexisExtension` — at minimum, a `name` and a `commands` list:
+
+```javascript
+import { LexisExtension } from '@void/lexis-editor';
+import { $getSelection, $isRangeSelection } from 'lexical';
+
+class TimestampExtension extends LexisExtension {
+  get name() {
+    return 'timestamp';
+  }
+
+  get commands() {
+    return [
+      {
+        id: 'insert-timestamp',
+        label: 'Insert timestamp',
+        execute(lexicalEditor) {
+          lexicalEditor.update(() => {
+            const selection = $getSelection();
+            if ($isRangeSelection(selection)) {
+              selection.insertText(new Date().toLocaleString());
+            }
+          });
+        },
+      },
+    ];
+  }
+}
+
+editor.addEventListener('editor:initialize', (e) => {
+  e.detail.configure({
+    extensions: [TimestampExtension],
+    toolbar: { template: 'bold italic | insert-timestamp' },
+  });
+});
+```
+
+Extensions that need their own Lexical nodes/commands (like the built-in table, image, and code-block extensions) also implement a `lexicalExtension` getter — see `src/core/extensions/` in this repo for real examples.
 
 ## Toolbar Configuration
 
@@ -195,6 +355,10 @@ The toolbar uses a token-based template system.
 **Media**:
 - `link` (extension-provided, shows popover)
 - `insert-image`
+
+**Tables**:
+- `insert-table`
+- `table-add-row`, `table-remove-row`, `table-add-column`, `table-remove-column`, `table-delete` — normally surfaced via the contextual floating panel (see [Tables](#tables)), but usable as toolbar tokens too
 
 **History**:
 - `undo`, `redo`
@@ -248,6 +412,7 @@ editor.isEmpty      // Boolean
 // Commands
 editor.runCommand('bold');
 editor.runCommand('heading-2');
+editor.runCommand('insert-image', { url: 'https://example.com/photo.png' }); // some commands take a payload
 
 // State
 editor.isActive('italic');      // true/false
@@ -262,7 +427,12 @@ editor.isDisabled('undo');      // true/false
 | **Lists** | `bullet-list`, `number-list` |
 | **Blocks** | `heading-1`, `heading-2`, `heading-3`, `heading-4`, `quote`, `paragraph`, `divider`, `code-block` |
 | **Media** | `link`, `unlink`, `insert-image` |
+| **Tables** | `insert-table`, `table-add-row`, `table-remove-row`, `table-add-column`, `table-remove-column`, `table-delete` |
 | **History** | `undo`, `redo` |
+
+## TypeScript
+
+Type declarations are included — no `@types` package needed. `@void/lexis-editor` types `LexisEditorElement`, `Editor`, `EditorCommand`, and every event's `detail` shape, plus the importable `LexisExtension` base class for writing custom extensions; `@void/lexis-editor/core` types the lighter headless-preset surface.
 
 ## Development
 
