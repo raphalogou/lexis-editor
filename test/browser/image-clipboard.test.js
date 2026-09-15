@@ -359,4 +359,49 @@ describe("image paste & drag-and-drop", {
 
     await page.close();
   });
+
+  test("dispatches editor:image:remove with the last known url/description when an image node is deleted", async () => {
+    const { page, pageErrors } = await env.newPage();
+    await clickIntoEditor(page);
+
+    const removed = await page.evaluate(async () => {
+      const editorEl = document.querySelector("lexis-editor");
+
+      let removedDetail = null;
+      document.addEventListener("editor:image:remove", (event) => {
+        removedDetail = event.detail;
+      });
+
+      editorEl.editor.runCommand("insert-image", {
+        url: "https://example.com/photo.png",
+        description: "a photo",
+        source: "url",
+      });
+      await new Promise((r) => setTimeout(r, 60));
+
+      const { $getRoot } = await import("/test/fixtures/lexical-utils.js");
+      editorEl.editor.lexicalEditor.update(() => {
+        const findImage = (nodes) => {
+          for (const node of nodes) {
+            if (node.getType() === "image") return node;
+            const found = node.getChildren?.() && findImage(node.getChildren());
+            if (found) return found;
+          }
+          return null;
+        };
+        findImage($getRoot().getChildren())?.remove();
+      });
+      await new Promise((r) => setTimeout(r, 60));
+
+      return removedDetail;
+    });
+
+    assert.deepEqual(removed, {
+      url: "https://example.com/photo.png",
+      description: "a photo",
+    });
+    assert.deepEqual(pageErrors, []);
+
+    await page.close();
+  });
 });

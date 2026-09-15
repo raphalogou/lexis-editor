@@ -44,3 +44,7 @@ document.addEventListener("editor:image:upload", (event) => {
     });
   }, 160);
 });
+
+document.addEventListener("editor:image:remove", (event) => {
+  console.debug("Remove image", event.detail);
+});

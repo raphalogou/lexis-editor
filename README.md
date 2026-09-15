@@ -231,6 +231,7 @@ e.detail.configure({
 | `editor:blur` | Editor lost focus |
 | `editor:image:insert` | Image about to insert (call `preventDefault()` to cancel) |
 | `editor:image:upload` | Image file upload with progress callbacks |
+| `editor:image:remove` | Image node removed; `detail.url`/`detail.description` reflect its last known state |
 
 ## API
 

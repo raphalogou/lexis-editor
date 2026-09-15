@@ -222,11 +222,28 @@ export class ImageExtension extends LexisExtension {
 
           lexicalEditor.registerMutationListener(
             ImageNode,
-            (mutations) => {
+            (mutations, { prevEditorState }) => {
               for (const [nodeKey, mutation] of mutations) {
                 if (mutation !== "destroyed") {
                   continue;
                 }
+
+                // The node is already gone from the current editor state by
+                // the time "destroyed" fires — its last known url/description
+                // only exist in the state being discarded.
+                const { url, description } = prevEditorState.read(() => {
+                  const node = $getNodeByKey(nodeKey);
+                  return $isImageNode(node)
+                    ? { url: node.getUrl(), description: node.getDescription() }
+                    : { url: null, description: "" };
+                });
+
+                this.hostElement.dispatchEvent(
+                  new CustomEvent("editor:image:remove", {
+                    bubbles: true,
+                    detail: { url, description },
+                  }),
+                );
 
                 this.#releaseNodeFileEntry(nodeKey);
                 this.#cancelPendingUploadWarning(nodeKey);
