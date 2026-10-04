@@ -6,3 +6,8 @@ export {
   INSERT_IMAGE_COMMAND,
   UPLOAD_STATUS,
 } from "./image-node";
+export {
+  $createMentionNode,
+  $isMentionNode,
+  MentionNode,
+} from "./mention-node";

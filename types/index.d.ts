@@ -11,7 +11,14 @@
 
 import type { ReadonlySignal } from "@lexical/extension";
 import type { Transformer } from "@lexical/markdown";
-import type { DecoratorNode, LexicalCommand, LexicalEditor } from "lexical";
+import type {
+  DecoratorNode,
+  Klass,
+  LexicalCommand,
+  LexicalEditor,
+  LexicalNode,
+  TextNode,
+} from "lexical";
 
 // ============================================================
 // Config
@@ -95,6 +102,24 @@ export interface LexisEditorElementEventMap {
   "editor:image:insert": CustomEvent<ImageInsertEventDetail>;
   "editor:image:upload": CustomEvent<ImageUploadEventDetail>;
   "editor:image:remove": CustomEvent<ImageRemoveEventDetail>;
+  /** Dispatched by `MentionExtension` (when not subclassed) on each query. */
+  "editor:mention:search": CustomEvent<MentionSearchEventDetail>;
+}
+
+export interface PromptItem {
+  id: string;
+  label: string;
+  description?: string;
+}
+
+export interface MentionSearchEventDetail {
+  /** Text typed after the trigger, e.g. `"ja"` for `@ja`. */
+  query: string;
+  trigger: string;
+  /** Aborted once a newer query supersedes this one or the menu closes. */
+  signal: AbortSignal;
+  /** Call once with the matching items; ids must not contain spaces or parentheses. */
+  respond(items: Array<Omit<PromptItem, "id"> & { id: string | number }>): void;
 }
 
 // ============================================================
@@ -196,8 +221,33 @@ export abstract class LexisExtension {
   get lexicalExtension(): unknown | null;
   get enabled(): boolean;
   get commands(): EditorCommand[];
+  /** Run before the built-in transformers for `editor.value` and shortcuts. */
+  get markdownTransformers(): Transformer[];
   render(toolbarEl: LexisToolbarElement): HTMLElement | null;
   dispose(): void;
+}
+
+/**
+ * Base for "type a trigger character, pick from an inline menu" features.
+ * Subclasses implement `search()` and `$createNode()`.
+ */
+export abstract class PromptExtension extends LexisExtension {
+  trigger: string;
+  maxQueryLength: number;
+  maxItems: number;
+  get isOpen(): boolean;
+  get nodes(): Array<Klass<LexicalNode>>;
+  search(
+    query: string,
+    options: { signal: AbortSignal },
+  ): Promise<PromptItem[]> | PromptItem[];
+  $createNode(item: PromptItem): LexicalNode;
+  renderItem(item: PromptItem): Array<Node | string>;
+}
+
+export class MentionExtension extends PromptExtension {
+  get name(): "mention";
+  $createNode(item: PromptItem): MentionNode;
 }
 
 export class RichTextExtension extends LexisExtension {
@@ -235,6 +285,28 @@ export const MARKDOWN_TRANSFORMERS: Transformer[];
 
 /** Dispatched (no payload) by the `code-block` command's toggle button. */
 export const TOGGLE_CODE_BLOCK_COMMAND: LexicalCommand<void>;
+
+// ============================================================
+// Mention node
+// ============================================================
+
+export interface MentionNodePayload {
+  id: string;
+  label: string;
+  trigger?: string;
+}
+
+/** Atomic inline token; HTML output is `<a data-mention-id="…">@label</a>`. */
+export class MentionNode extends TextNode {
+  getMentionId(): string;
+  getLabel(): string;
+  getTrigger(): string;
+}
+
+export function $createMentionNode(payload: MentionNodePayload): MentionNode;
+export function $isMentionNode(
+  node: LexicalNode | null | undefined,
+): node is MentionNode;
 
 // ============================================================
 // Image node

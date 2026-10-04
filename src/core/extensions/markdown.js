@@ -290,7 +290,10 @@ export class MarkdownExtension extends LexisExtension {
     return defineExtension({
       name: "lexis/markdown",
       register: (lexicalEditor) => {
-        return registerMarkdownShortcuts(lexicalEditor, MARKDOWN_TRANSFORMERS);
+        return registerMarkdownShortcuts(
+          lexicalEditor,
+          this.editor.markdownTransformers,
+        );
       },
     });
   }

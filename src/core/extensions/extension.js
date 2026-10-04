@@ -42,6 +42,16 @@ export class LexisExtension {
   }
 
   /**
+   * Markdown transformers this extension contributes. They run before the
+   * built-in ones, so an extension-specific syntax (e.g. `@[label](id)`)
+   * wins over a more generic match (e.g. a plain `[label](id)` link).
+   * @returns {import('@lexical/markdown').Transformer[]}
+   */
+  get markdownTransformers() {
+    return [];
+  }
+
+  /**
    * @param {import('../../elements').LexisToolbarElement} _toolbarEl
    * @returns {HTMLElement|null}
    */

@@ -326,6 +326,29 @@ editor.addEventListener('editor:initialize', (e) => {
 
 Extensions that need their own Lexical nodes/commands (like the built-in table, image, and code-block extensions) also implement a `lexicalExtension` getter — see `src/core/extensions/` in this repo for real examples.
 
+### Mentions (prompt extensions)
+
+`MentionExtension` is opt-in. Typing `@` opens an inline menu; picking an item inserts an atomic mention chip (Backspace removes it whole). The host page supplies the items:
+
+```javascript
+import { MentionExtension } from '@void/lexis-editor';
+
+editor.addEventListener('editor:initialize', (e) => {
+  e.detail.configure({ extensions: [MentionExtension] });
+});
+
+editor.addEventListener('editor:mention:search', (e) => {
+  const { query, signal, respond } = e.detail;
+  fetch(`/api/users?q=${encodeURIComponent(query)}`, { signal })
+    .then((r) => r.json())
+    .then((users) => respond(users.map((u) => ({ id: u.id, label: u.name, description: u.email }))));
+});
+```
+
+Mentions serialize as `@[Ada Lovelace](ada)` in markdown and `<a data-mention-id="ada" data-mention-trigger="@">@Ada Lovelace</a>` in HTML. Item ids can't contain spaces or parentheses.
+
+`MentionExtension` is built on `PromptExtension`, a base class for any trigger-character menu (hashtags, slash commands, emoji…): subclass it, set `name` and `trigger`, and implement `search(query, { signal })` and `$createNode(item)`. Add `nodes` and `markdownTransformers` if it inserts its own node type.
+
 ## Toolbar Configuration
 
 The toolbar uses a token-based template system.

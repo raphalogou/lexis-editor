@@ -47,6 +47,9 @@ export class Editor {
 
   #isCacheDirty = true;
 
+  /** @type {import('@lexical/markdown').Transformer[]} */
+  #markdownTransformers = MARKDOWN_TRANSFORMERS;
+
   /** @type {import('lexical').LexicalEditor} */
   lexicalEditor = null;
 
@@ -82,6 +85,7 @@ export class Editor {
       code: "inline-code",
     },
     code: "code-block",
+    mention: "mention",
     codeHighlight: {
       atrule: "editor-token-atrule",
       attr: "editor-token-attr",
@@ -127,6 +131,10 @@ export class Editor {
     };
 
     this.#registerExtensions();
+    this.#markdownTransformers = [
+      ...this.enabledExtensions.flatMap((ext) => ext.markdownTransformers),
+      ...MARKDOWN_TRANSFORMERS,
+    ];
     this.#buildLexicalEditor(rootEl);
 
     for (const ext of this.enabledExtensions) {
@@ -174,6 +182,14 @@ export class Editor {
     return Object.freeze({ ...this.#commands });
   }
 
+  /**
+   * The built-in markdown transformers plus every enabled extension's own.
+   * @returns {import('@lexical/markdown').Transformer[]}
+   */
+  get markdownTransformers() {
+    return this.#markdownTransformers;
+  }
+
   get value() {
     if (!this.#isCacheDirty && this.#cache.value !== null) {
       return this.#cache.value;
@@ -181,7 +197,7 @@ export class Editor {
 
     this.#cache.value = this.lexicalEditor.read(() =>
       this.supportsMarkdown
-        ? $convertToMarkdownString(MARKDOWN_TRANSFORMERS, $getRoot())
+        ? $convertToMarkdownString(this.#markdownTransformers, $getRoot())
         : sanitizeHtml($generateHtmlFromNodes(this.lexicalEditor)),
     );
     this.#isCacheDirty = false;
@@ -195,7 +211,7 @@ export class Editor {
       rootNode.clear();
 
       if (this.supportsMarkdown) {
-        $convertFromMarkdownString(value, MARKDOWN_TRANSFORMERS, rootNode);
+        $convertFromMarkdownString(value, this.#markdownTransformers, rootNode);
       } else {
         const nodes = $generateNodesFromDOM(
           this.lexicalEditor,

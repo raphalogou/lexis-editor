@@ -69,6 +69,17 @@
     }
   }
 
+  .mention,
+  a[data-mention-id] {
+    padding: 0 0.2em;
+    border-radius: var(--lexis-mention-radius);
+    background: var(--lexis-mention-bg);
+    color: var(--lexis-mention-fg);
+    font-weight: var(--lexis-font-bold-weight);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
   .table-scrollable-wrapper {
     overflow-x: auto;
     margin: 0 0 var(--lexis-content-gap);

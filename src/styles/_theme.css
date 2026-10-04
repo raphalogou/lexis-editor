@@ -14,6 +14,18 @@
 
   --lexis-font-bold-weight: 600;
 
+  --lexis-mention-bg: color-mix(
+    in oklch,
+    var(--lexis-accent, #4f46e5),
+    white 88%
+  );
+  --lexis-mention-fg: color-mix(
+    in oklch,
+    var(--lexis-accent, #4f46e5),
+    black 25%
+  );
+  --lexis-mention-radius: 4px;
+
   --lexis-selected-outline-width: 2px;
   --lexis-selected-outline-offset: 2px;
   --lexis-selected-outline-color: #3c84f4;

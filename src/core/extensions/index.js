@@ -4,5 +4,7 @@ export { LexisExtension } from "./extension";
 export { ImageExtension } from "./image";
 export { LinkExtension } from "./link";
 export { MARKDOWN_TRANSFORMERS, MarkdownExtension } from "./markdown";
+export { MentionExtension } from "./mention";
+export { PromptExtension } from "./prompt";
 export { RichTextExtension } from "./rich-text";
 export { TableExtension } from "./table";
