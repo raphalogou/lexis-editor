@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0] - 2026-10-04
+
+New features: tables, @-mentions and a reusable prompt-menu extension base, an image-removal event, and bundled TypeScript declarations. No breaking changes — existing configs, attributes, and the public JS API are unaffected.
+
+### Added
+
+- **@-mentions (`MentionExtension`, opt-in).** Typing `@` at a word boundary opens an inline menu fed by the new bubbling `editor:mention:search` event (`{ query, trigger, signal, respond }`); ↑/↓ to move, Enter/Tab or click to pick, Escape to dismiss. Picked items become an atomic chip (`MentionNode`) that Backspace removes as a single unit. Mentions round-trip as `@[label](id)` in markdown and as `<a data-mention-id="…" data-mention-trigger="@">` in HTML output, within the existing sanitizer allowlist. Enable with `extensions: [MentionExtension]`.
+- **`PromptExtension` base class** for any trigger-character menu (hashtags, slash commands, emoji…): subclass it, set `trigger`, implement `search(query, { signal })` and `$createNode(item)`. It handles stale async results, keyboard/mouse selection, and menu positioning; the menu renders in the top layer so editor overflow can't clip it.
+- **`LexisExtension.markdownTransformers`** — extensions can now contribute their own markdown transformers. They run ahead of the built-ins for both `editor.value` and live markdown shortcuts; the effective list is exposed as `Editor.markdownTransformers`.
+- **Tables.** `insert-table` inserts a 3×3 grid with a header row; tables round-trip through markdown as GFM pipe tables, including inline formatting in cells. A floating panel inside a table offers add/remove row, add/remove column and delete table (also available as the `table-*` command ids), with hover previews of what each action affects. Merged cells and column alignment are not supported.
+- **`editor:image:remove` event** (bubbling) with the removed image's last known `{ url, description }` — e.g. to clean up server-side uploads.
+- **TypeScript declarations** shipped in `types/` for both `@void/lexis-editor` and `@void/lexis-editor/core`, covering the element, `Editor`, commands, extensions, nodes, and every event's `detail` shape.
+- CSS hooks: `.lexis-prompt-menu` / `[data-slot="prompt-option"]` for the menu, `.mention` (in the editor) / `a[data-mention-id]` (in rendered content) for chips, themable via `--lexis-mention-bg`, `--lexis-mention-fg`, `--lexis-mention-radius`.
+
+### Fixed
+
+- Table hover/selection highlights could be invisible (lost to a neighbor's border under `border-collapse`, or painted behind the header row); the floating table panel could stay stuck hidden after switching windows and clicking back into the same cell.
+
 ## [0.2.1] - 2026-09-13
 
 Dependency upgrade and internal cleanup. No consumer-facing API changes.
